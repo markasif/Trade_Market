@@ -55,11 +55,11 @@ export default function HomePage() {
             </h2>
           </div>
           <div className="flex flex-wrap gap-3 mt-6">
-            <Button size="lg" className="h-12 px-5 text-base font-bold">
-              Browse All Products
+            <Button size="lg" className="h-12 px-5 text-base font-bold" asChild>
+              <Link href="/products">Browse All Products</Link>
             </Button>
-            <Button size="lg" variant="secondary" className="h-12 px-5 text-base font-bold bg-background text-foreground hover:bg-background/90">
-              Become a Supplier
+            <Button size="lg" variant="secondary" className="h-12 px-5 text-base font-bold bg-background text-foreground hover:bg-background/90" asChild>
+              <Link href="/supplier/register">Become a Supplier</Link>
             </Button>
           </div>
         </div>

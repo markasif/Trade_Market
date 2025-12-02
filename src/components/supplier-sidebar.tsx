@@ -11,7 +11,7 @@ import { BarChart, HelpCircle, LayoutDashboard, Megaphone, Package, Receipt, Set
 const companyLogo = PlaceHolderImages.find(img => img.id === 'company-logo-1');
 
 const mainNavLinks = [
-    { href: "/supplier/supplier-dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" /> },
+    { href: "/supplier/dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" /> },
     { href: "/supplier/products", label: "Products", icon: <Package className="h-5 w-5" /> },
     { href: "/supplier/orders", label: "Orders", icon: <Receipt className="h-5 w-5" /> },
     { href: "/supplier/marketing-tools", label: "Marketing", icon: <Megaphone className="h-5 w-5" /> },

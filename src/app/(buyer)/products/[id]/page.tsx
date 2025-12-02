@@ -6,6 +6,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
 
 const mainImage = PlaceHolderImages.find(p => p.id === 'product-widget-main');
 const thumbnails = [

@@ -1,1 +1,0 @@
-src/app/(buyer)/buyer-dashboard/account-status/page.tsx

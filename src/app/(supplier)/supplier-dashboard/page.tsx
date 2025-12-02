@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 export default function SupplierDashboardPage() {
     return (
         <div>
-            <h1 className="text-3xl font-bold mb-6">Supplier Dashboard</h1>
+            <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
             <Card>
                 <CardHeader>
                     <CardTitle>Welcome, Supplier!</CardTitle>
