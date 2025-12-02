@@ -1,3 +1,4 @@
+import { Footer } from "@/components/footer";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -8,7 +9,7 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 const userAvatar = PlaceHolderImages.find((img) => img.id === 'user-avatar-2');
 
 const navLinks = [
-    { href: "/buyer/dashboard", label: "Dashboard", icon: <Package className="h-5 w-5" /> },
+    { href: "/buyer-dashboard", label: "Dashboard", icon: <Package className="h-5 w-5" /> },
     { href: "/buyer/orders", label: "Orders", icon: <Receipt className="h-5 w-5" /> },
     { href: "/products", label: "Products", icon: <ShoppingBag className="h-5 w-5" /> },
 ];
@@ -59,6 +60,7 @@ export default function BuyerLayout({
         <main className="flex flex-1 justify-center py-8 sm:py-12 md:py-16">
             {children}
         </main>
+        <Footer />
     </div>
   );
 }

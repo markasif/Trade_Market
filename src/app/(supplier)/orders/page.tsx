@@ -1,9 +1,6 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import PendingOrdersPage from "./pending/page";
-import ShippedOrdersPage from "../shipped/page";
+import ShippedOrdersPage from "./shipped/page";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function SupplierOrdersPage() {
     return (

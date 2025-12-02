@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Logo2 } from "@/components/icons";
+import { Footer } from "@/components/footer";
 
 export default function AuthLayout({
   children,
@@ -24,6 +25,7 @@ export default function AuthLayout({
       <main className="flex flex-1 justify-center py-8 px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-2xl flex-1">{children}</div>
       </main>
+      <Footer />
     </div>
   );
 }
