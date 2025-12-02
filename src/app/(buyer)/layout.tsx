@@ -8,7 +8,7 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 const userAvatar = PlaceHolderImages.find((img) => img.id === 'user-avatar-2');
 
 const navLinks = [
-    { href: "/buyer/dashboard", label: "Dashboard", icon: <Package className="h-5 w-5" /> },
+    { href: "/buyer/buyer-dashboard", label: "Dashboard", icon: <Package className="h-5 w-5" /> },
     { href: "/buyer/orders", label: "Orders", icon: <Receipt className="h-5 w-5" /> },
     { href: "/buyer/products", label: "Products", icon: <Users className="h-5 w-5" /> },
 ];
