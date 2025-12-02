@@ -1,3 +1,4 @@
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -12,7 +13,7 @@ const orders = [
     { id: "#ORD-00121", buyer: "Main Street Supplies", total: "$499.99", status: "Awaiting Shipment" },
 ]
 
-export default function SupplierOrderFulfillmentPage() {
+export default function PendingOrdersPage() {
     return (
         <div className="w-full max-w-7xl mx-auto">
             <div className="mb-6">
