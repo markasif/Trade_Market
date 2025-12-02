@@ -1,3 +1,148 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero-warehouse",
+      "description": "A modern, well-lit warehouse with neatly organized shelves of products",
+      "imageUrl": "https://images.unsplash.com/photo-1601598340556-cb4d7477f960?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHx3YXJlaG91c2UlMjBzaGVsdmVzfGVufDB8fHx8MTc2NDY5NzkxN3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "warehouse shelves"
+    },
+    {
+      "id": "category-electronics",
+      "description": "Various modern electronic devices on a clean surface",
+      "imageUrl": "https://images.unsplash.com/photo-1631863552122-3072cf599a46?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8ZWxlY3Ryb25pYyUyMGRldmljZXN8ZW58MHx8fHwxNzY0Njk3OTE3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "electronic devices"
+    },
+    {
+      "id": "category-apparel",
+      "description": "Racks of colorful clothing in a retail store",
+      "imageUrl": "https://images.unsplash.com/photo-1520006403909-838d6b92c22e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxjbG90aGluZyUyMHJhY2t8ZW58MHx8fHwxNzY0NjYyODM3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "clothing rack"
+    },
+    {
+      "id": "category-industrial",
+      "description": "Heavy machinery and industrial tools in a workshop",
+      "imageUrl": "https://images.unsplash.com/photo-1753947687461-4b80f5ce4155?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxpbmR1c3RyaWFsJTIwdG9vbHN8ZW58MHx8fHwxNzY0NjEwMzA3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "industrial tools"
+    },
+    {
+      "id": "category-office",
+      "description": "A modern office desk with a laptop, notebooks, and coffee",
+      "imageUrl": "https://images.unsplash.com/photo-1571624436279-b272aff752b5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxvZmZpY2UlMjBkZXNrfGVufDB8fHx8MTc2NDY1NTk1N3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "office desk"
+    },
+    {
+      "id": "user-avatar-1",
+      "description": "User avatar image",
+      "imageUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjQ2NzYxNTh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person portrait"
+    },
+    {
+      "id": "user-avatar-2",
+      "description": "User avatar image for dashboard",
+      "imageUrl": "https://images.unsplash.com/photo-1557053908-4793c484d06f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHx3b21hbiUyMHBvcnRyYWl0fGVufDB8fHx8MTc2NDY4NTE3OHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman portrait"
+    },
+    {
+      "id": "user-avatar-3",
+      "description": "User profile picture",
+      "imageUrl": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxtYW4lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjQ2Njg4OTF8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man portrait"
+    },
+    {
+      "id": "user-avatar-4",
+      "description": "User profile picture for checkout",
+      "imageUrl": "https://images.unsplash.com/photo-1623605931891-d5b95ee98459?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxwZXJzb24lMjBzbWlsaW5nfGVufDB8fHx8MTc2NDY2NTY0OHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person smiling"
+    },
+    {
+      "id": "user-avatar-5",
+      "description": "User avatar for buyer dashboard",
+      "imageUrl": "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxwcm9mZXNzaW9uYWwlMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjQ2NDIxNzl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "professional portrait"
+    },
+    {
+      "id": "admin-avatar",
+      "description": "Admin avatar image",
+      "imageUrl": "https://images.unsplash.com/photo-1753288695368-ee8f41681243?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxhZG1pbiUyMHBvcnRyYWl0fGVufDB8fHx8MTc2NDY5NzkxN3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "admin portrait"
+    },
+    {
+      "id": "product-widget-main",
+      "description": "Main product view of a premium industrial widget",
+      "imageUrl": "https://images.unsplash.com/photo-1720036236632-fdb6211cf317?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxpbmR1c3RyaWFsJTIwd2lkZ2V0fGVufDB8fHx8MTc2NDY5MjI5NXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "industrial widget"
+    },
+    {
+      "id": "product-widget-thumb1",
+      "description": "Thumbnail of the widget from the side",
+      "imageUrl": "https://picsum.photos/seed/13/100/100",
+      "imageHint": "widget side"
+    },
+    {
+      "id": "product-widget-thumb2",
+      "description": "Thumbnail of the widget from another angle",
+      "imageUrl": "https://images.unsplash.com/photo-1674673353768-727419b54909?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHx3aWRnZXQlMjBhbmdsZXxlbnwwfHx8fDE3NjQ2OTc5MTd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "widget angle"
+    },
+    {
+      "id": "product-widget-thumb3",
+      "description": "Thumbnail showing widget detail",
+      "imageUrl": "https://images.unsplash.com/photo-1583916833408-c5a6287c67de?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHx3aWRnZXQlMjBkZXRhaWx8ZW58MHx8fHwxNzY0Njk3OTE3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "widget detail"
+    },
+    {
+      "id": "product-widget-thumb4",
+      "description": "Thumbnail of the widget in use",
+      "imageUrl": "https://images.unsplash.com/photo-1658203897373-9ba844573252?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHx3aWRnZXQlMjB1c2V8ZW58MHx8fHwxNzY0Njk3OTE3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "widget use"
+    },
+    {
+      "id": "payment-proof",
+      "description": "Scanned image of a payment receipt or bank transfer confirmation slip",
+      "imageUrl": "https://images.unsplash.com/photo-1726137570036-cc7e8b1b58c1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxwYXltZW50JTIwcmVjZWlwdHxlbnwwfHx8fDE3NjQ2OTUzOTR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "payment receipt"
+    },
+    {
+      "id": "product-running-shoes",
+      "description": "Red sports shoe",
+      "imageUrl": "https://images.unsplash.com/photo-1670607231621-c00fd76d2387?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxyZWQlMjBzaG9lfGVufDB8fHx8MTc2NDY5NzkxN3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "red shoe"
+    },
+    {
+      "id": "product-headphones",
+      "description": "Black headphones",
+      "imageUrl": "https://images.unsplash.com/photo-1655720348598-526764cd2bca?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxibGFjayUyMGhlYWRwaG9uZXN8ZW58MHx8fHwxNzY0Njk3OTE3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "black headphones"
+    },
+    {
+      "id": "product-chrono-watch",
+      "description": "Silver wrist watch",
+      "imageUrl": "https://images.unsplash.com/photo-1634141628215-732e10d16bec?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxzaWx2ZXIlMjB3YXRjaHxlbnwwfHx8fDE3NjQ2NTExMzR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "silver watch"
+    },
+    {
+      "id": "company-logo-1",
+      "description": "Company logo for Supplier Inc.",
+      "imageUrl": "https://images.unsplash.com/photo-1620288627223-53302f4e8c74?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxjb21wYW55JTIwbG9nb3xlbnwwfHx8fDE3NjQ2MTk5OTV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "company logo"
+    },
+    {
+      "id": "social-kit-1",
+      "description": "A sample social media post with a colorful abstract background",
+      "imageUrl": "https://images.unsplash.com/photo-1684139517679-032b7213ad2e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxhYnN0cmFjdCUyMGJhY2tncm91bmR8ZW58MHx8fHwxNzY0NjM1ODI2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "abstract background"
+    },
+    {
+      "id": "social-kit-2",
+      "description": "A second social media post mockup with a blue wavy pattern",
+      "imageUrl": "https://images.unsplash.com/photo-1605362001336-f91645086f32?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8d2F2eSUyMHBhdHRlcm58ZW58MHx8fHwxNzY0Njk3OTE3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "wavy pattern"
+    },
+    {
+      "id": "social-kit-3",
+      "description": "A third social media graphic with a geometric design",
+      "imageUrl": "https://images.unsplash.com/photo-1602750744872-fa9540589cc3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxnZW9tZXRyaWMlMjBkZXNpZ258ZW58MHx8fHwxNzY0NjQyNjgzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "geometric design"
+    }
+  ]
 }
