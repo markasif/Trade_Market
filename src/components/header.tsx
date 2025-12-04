@@ -53,7 +53,7 @@ export function Header() {
           />
         </div>
         <div className="flex gap-2 items-center">
-          <Button asChild><Link href="/auth/buyer/register">Login</Link></Button>
+          <Button asChild><Link href="/auth/login">Login</Link></Button>
           <Button variant="ghost" size="icon" className="bg-gray-100 dark:bg-gray-800 text-muted-foreground hover:bg-gray-200 dark:hover:bg-gray-700">
             <Heart className="h-5 w-5" />
             <span className="sr-only">Wishlist</span>

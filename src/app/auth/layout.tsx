@@ -18,12 +18,12 @@ export default function AuthLayout({
           </h2>
         </Link>
         <div className="flex items-center gap-4">
-          <Button variant="ghost">Log In</Button>
-          <Button>Sign Up</Button>
+          <Button variant="ghost" asChild><Link href="/auth/login">Log In</Link></Button>
+          <Button asChild><Link href="/auth/buyer/register">Sign Up</Link></Button>
         </div>
       </header>
       <main className="flex flex-1 justify-center py-8 px-4 sm:px-6 lg:px-8">
-        <div className="w-full max-w-2xl flex-1">{children}</div>
+        <div className="w-full max-w-md flex-1">{children}</div>
       </main>
       <Footer />
     </div>
