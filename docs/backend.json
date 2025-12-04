@@ -36,10 +36,7 @@
       "required": [
         "id",
         "userType",
-        "email",
-        "firstName",
-        "lastName",
-        "creationDate"
+        "email"
       ]
     },
     "Buyer": {
@@ -50,7 +47,7 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the buyer."
+          "description": "Unique identifier for the buyer (should match user ID)."
         },
         "userId": {
           "type": "string",
@@ -60,13 +57,13 @@
           "type": "string",
           "description": "Name of the buyer's business."
         },
+        "phone": {
+          "type": "string",
+          "description": "Contact phone number for the buyer."
+        },
         "shippingAddress": {
           "type": "string",
           "description": "Full shipping address of the buyer."
-        },
-        "billingAddress": {
-          "type": "string",
-          "description": "Full billing address of the buyer."
         },
         "gstNumber": {
           "type": "string",
@@ -75,6 +72,16 @@
         "accountStatus": {
           "type": "string",
           "description": "Account status of the buyer (e.g., pending, active, inactive)."
+        },
+        "gstCertificateUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL to the uploaded GST certificate in Firebase Storage."
+        },
+        "businessRegistrationUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL to the uploaded business registration proof in Firebase Storage."
         }
       },
       "required": [
@@ -82,7 +89,6 @@
         "userId",
         "businessName",
         "shippingAddress",
-        "billingAddress",
         "gstNumber",
         "accountStatus"
       ]
@@ -95,7 +101,7 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the supplier."
+          "description": "Unique identifier for the supplier (should match user ID)."
         },
         "userId": {
           "type": "string",
@@ -114,13 +120,21 @@
           "type": "string",
           "description": "Contact number of the supplier."
         },
-        "businessLicenseDocumentId": {
-          "type": "string",
-          "description": "Reference to Document for the business license."
+        "businessAddress": {
+            "type": "string",
+            "description": "Full business address of the supplier."
         },
-        "taxIdDocumentId": {
+        "gstNumber": {
+            "type": "string",
+            "description": "GST number of the supplier's business."
+        },
+        "businessLicenseUrl": {
           "type": "string",
-          "description": "Reference to Document for the tax ID."
+          "description": "URL to the uploaded business license in Firebase Storage."
+        },
+        "taxIdDocumentUrl": {
+          "type": "string",
+          "description": "URL to the uploaded tax ID document in Firebase Storage."
         },
         "accountStatus": {
           "type": "string",
@@ -133,8 +147,10 @@
         "companyName",
         "businessEmail",
         "contactNumber",
-        "businessLicenseDocumentId",
-        "taxIdDocumentId",
+        "businessAddress",
+        "gstNumber",
+        "businessLicenseUrl",
+        "taxIdDocumentUrl",
         "accountStatus"
       ]
     },
@@ -164,14 +180,26 @@
           "type": "string",
           "description": "Reference to Category. (Relationship: Category 1:N Product)"
         },
-        "imageUrl": {
-          "type": "string",
-          "description": "URL of the product image.",
-          "format": "uri"
+        "imageUrls": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          },
+          "description": "URLs of the product images."
         },
-        "price": {
-          "type": "number",
-          "description": "Price of the product."
+        "pricingTiers": {
+            "type": "array",
+            "description": "Multi-tier pricing for the product.",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "minQuantity": {"type": "number"},
+                    "maxQuantity": {"type": "number"},
+                    "price": {"type": "number"}
+                },
+                "required": ["minQuantity", "price"]
+            }
         },
         "moq": {
           "type": "number",
@@ -188,8 +216,8 @@
         "name",
         "description",
         "categoryId",
-        "imageUrl",
-        "price",
+        "imageUrls",
+        "pricingTiers",
         "moq",
         "availableStock"
       ]
@@ -215,8 +243,7 @@
       },
       "required": [
         "id",
-        "name",
-        "description"
+        "name"
       ]
     },
     "Order": {
@@ -244,11 +271,16 @@
         },
         "status": {
           "type": "string",
-          "description": "Status of the order (e.g., pending, processing, shipped, delivered)."
+          "description": "Status of the order (e.g., awaiting-payment, pending, processing, shipped, delivered)."
         },
         "trackingNumber": {
           "type": "string",
           "description": "Tracking number for the shipment."
+        },
+        "paymentProofUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL of the uploaded payment proof."
         }
       },
       "required": [
@@ -294,38 +326,6 @@
         "unitPrice"
       ]
     },
-    "Document": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Document",
-      "type": "object",
-      "description": "Represents a document uploaded to the system.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the document."
-        },
-        "url": {
-          "type": "string",
-          "description": "URL of the uploaded document.",
-          "format": "uri"
-        },
-        "uploadDate": {
-          "type": "string",
-          "description": "Date and time when the document was uploaded.",
-          "format": "date-time"
-        },
-        "documentType": {
-          "type": "string",
-          "description": "Type of document (e.g., business license, tax ID)."
-        }
-      },
-      "required": [
-        "id",
-        "url",
-        "uploadDate",
-        "documentType"
-      ]
-    },
     "Admin": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Admin",
@@ -345,56 +345,11 @@
         "id",
         "userId"
       ]
-    },
-    "SocialMediaKit": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "SocialMediaKit",
-      "type": "object",
-      "description": "Represents a social media kit generated for a product.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the social media kit."
-        },
-        "productId": {
-          "type": "string",
-          "description": "Reference to Product. (Relationship: Product 1:1 SocialMediaKit)"
-        },
-        "instagramPostUrl": {
-          "type": "string",
-          "description": "URL of the generated Instagram post image.",
-          "format": "uri"
-        },
-        "facebookCoverUrl": {
-          "type": "string",
-          "description": "URL of the generated Facebook cover image.",
-          "format": "uri"
-        },
-        "twitterHeaderUrl": {
-          "type": "string",
-          "description": "URL of the generated Twitter header image.",
-          "format": "uri"
-        },
-        "creationDate": {
-          "type": "string",
-          "description": "Date and time when the social media kit was generated.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "productId",
-        "instagramPostUrl",
-        "facebookCoverUrl",
-        "twitterHeaderUrl",
-        "creationDate"
-      ]
     }
   },
   "auth": {
     "providers": [
-      "password",
-      "anonymous"
+      "password"
     ]
   },
   "firestore": {
@@ -416,37 +371,17 @@
         }
       },
       {
-        "path": "/users/{userId}/documents/{documentId}",
-        "definition": {
-          "entityName": "Document",
-          "schema": {
-            "$ref": "#/backend/entities/Document"
-          },
-          "description": "Stores KYC documents uploaded by users. Path-based ownership ensures only the user or an admin can access these documents.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user (owner)."
-            },
-            {
-              "name": "documentId",
-              "description": "The unique identifier for the document."
-            }
-          ]
-        }
-      },
-      {
         "path": "/buyers/{buyerId}",
         "definition": {
           "entityName": "Buyer",
           "schema": {
             "$ref": "#/backend/entities/Buyer"
           },
-          "description": "Stores buyer-specific data.",
+          "description": "Stores buyer-specific data, linked to a user account.",
           "params": [
             {
               "name": "buyerId",
-              "description": "The unique identifier of the buyer."
+              "description": "The unique identifier of the buyer (matches userId)."
             }
           ]
         }
@@ -458,11 +393,11 @@
           "schema": {
             "$ref": "#/backend/entities/Supplier"
           },
-          "description": "Stores supplier-specific data.",
+          "description": "Stores supplier-specific data, linked to a user account.",
           "params": [
             {
               "name": "supplierId",
-              "description": "The unique identifier of the supplier."
+              "description": "The unique identifier of the supplier (matches userId)."
             }
           ]
         }
@@ -516,14 +451,18 @@
         }
       },
       {
-        "path": "/order_items/{orderItemId}",
+        "path": "/orders/{orderId}/items/{orderItemId}",
         "definition": {
           "entityName": "OrderItem",
           "schema": {
             "$ref": "#/backend/entities/OrderItem"
           },
-          "description": "Stores individual items within an order.",
+          "description": "Stores individual items within an order as a subcollection.",
           "params": [
+             {
+              "name": "orderId",
+              "description": "The unique identifier of the parent order."
+            },
             {
               "name": "orderItemId",
               "description": "The unique identifier of the order item."
@@ -532,7 +471,7 @@
         }
       },
       {
-        "path": "/roles_admin/{userId}",
+        "path": "/admins/{userId}",
         "definition": {
           "entityName": "Admin",
           "schema": {
@@ -546,24 +485,7 @@
             }
           ]
         }
-      },
-      {
-        "path": "/social_media_kits/{socialMediaKitId}",
-        "definition": {
-          "entityName": "SocialMediaKit",
-          "schema": {
-            "$ref": "#/backend/entities/SocialMediaKit"
-          },
-          "description": "Stores social media kits generated for products.",
-          "params": [
-            {
-              "name": "socialMediaKitId",
-              "description": "The unique identifier of the social media kit."
-            }
-          ]
-        }
       }
-    ],
-    "reasoning": "This Firestore data structure is designed to support a B2B wholesale art marketplace, focusing on efficient supplier onboarding, product catalog management, and buyer order processing. It prioritizes Authorization Independence and Query-ability, crucial for security and scalability. Central to this design is the denormalization of authorization data and structural segregation to ensure secure and efficient data access.\n\nAuthorization Independence is achieved by denormalizing user roles directly into the documents requiring authorization checks. For instance, the `products` collection includes the `supplierId`, allowing rules to verify ownership based solely on the document content and `request.auth.uid` without needing `get()` calls. Similarly, admin roles are managed via document existence in the `/roles_admin/{uid}` collection.\n\nTo support QAPs (Rules are Not Filters), structural segregation is employed. Private user data such as KYC documents is stored in user-specific subcollections (`/users/{userId}/documents/{documentId}`), while publicly accessible product listings reside in the root `/products` collection. This segregation allows for secure `list` operations, ensuring that buyers can only view approved products, and suppliers can only manage their products. Role-based access (DBAC) is enforced using the existence of documents in the `/roles_admin/{uid}` collection, granting admin privileges based on user authentication.\n\nThe User and related profiles (Buyer, Supplier, Admin) are separated. There is a 1:1 relationship between Users and respective Profiles (Buyer, Supplier, Admin)."
+    ]
   }
 }
