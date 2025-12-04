@@ -20,7 +20,7 @@ const status = {
         icon: <XCircle className="h-16 w-16 text-destructive" />,
         title: "Verification Failed",
         description: "We were unable to verify your account with the information provided. Please review your details and resubmit.",
-        button: <Button asChild size="lg" variant="destructive"><Link href="/buyer/register">Resubmit Application</Link></Button>
+        button: <Button asChild size="lg" variant="destructive"><Link href="/auth/buyer/register">Resubmit Application</Link></Button>
     }
 }
 

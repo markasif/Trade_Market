@@ -92,7 +92,7 @@ export default function CheckoutConfirmationPage() {
                         <CardTitle className="text-lg">Billing Address</CardTitle>
                     </CardHeader>
                     <CardContent className="text-sm text-muted-foreground leading-relaxed">
-                        <p>John Doe</p>
+                        <p>John Doe</p>p>
                         <p>123 Industrial Way, Suite 456</p>
                         <p>Metropolis, ST 12345</p>
                         <p>United States</p>
