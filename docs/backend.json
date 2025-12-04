@@ -1,0 +1,569 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the marketplace platform.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "userType": {
+          "type": "string",
+          "description": "Type of user (e.g., buyer, supplier, admin)."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user.",
+          "format": "email"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "First name of the user."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Last name of the user."
+        },
+        "creationDate": {
+          "type": "string",
+          "description": "Date and time when the user account was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userType",
+        "email",
+        "firstName",
+        "lastName",
+        "creationDate"
+      ]
+    },
+    "Buyer": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Buyer",
+      "type": "object",
+      "description": "Represents a buyer on the marketplace platform.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the buyer."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:1 Buyer)"
+        },
+        "businessName": {
+          "type": "string",
+          "description": "Name of the buyer's business."
+        },
+        "shippingAddress": {
+          "type": "string",
+          "description": "Full shipping address of the buyer."
+        },
+        "billingAddress": {
+          "type": "string",
+          "description": "Full billing address of the buyer."
+        },
+        "gstNumber": {
+          "type": "string",
+          "description": "GST number of the buyer's business."
+        },
+        "accountStatus": {
+          "type": "string",
+          "description": "Account status of the buyer (e.g., pending, active, inactive)."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "businessName",
+        "shippingAddress",
+        "billingAddress",
+        "gstNumber",
+        "accountStatus"
+      ]
+    },
+    "Supplier": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Supplier",
+      "type": "object",
+      "description": "Represents a supplier on the marketplace platform.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the supplier."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:1 Supplier)"
+        },
+        "companyName": {
+          "type": "string",
+          "description": "Name of the supplier's company."
+        },
+        "businessEmail": {
+          "type": "string",
+          "description": "Business email address of the supplier.",
+          "format": "email"
+        },
+        "contactNumber": {
+          "type": "string",
+          "description": "Contact number of the supplier."
+        },
+        "businessLicenseDocumentId": {
+          "type": "string",
+          "description": "Reference to Document for the business license."
+        },
+        "taxIdDocumentId": {
+          "type": "string",
+          "description": "Reference to Document for the tax ID."
+        },
+        "accountStatus": {
+          "type": "string",
+          "description": "Account status of the supplier (e.g., pending, active, inactive)."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "companyName",
+        "businessEmail",
+        "contactNumber",
+        "businessLicenseDocumentId",
+        "taxIdDocumentId",
+        "accountStatus"
+      ]
+    },
+    "Product": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Product",
+      "type": "object",
+      "description": "Represents a product listed on the marketplace.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the product."
+        },
+        "supplierId": {
+          "type": "string",
+          "description": "Reference to Supplier. (Relationship: Supplier 1:N Product)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the product."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the product."
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "Reference to Category. (Relationship: Category 1:N Product)"
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the product image.",
+          "format": "uri"
+        },
+        "price": {
+          "type": "number",
+          "description": "Price of the product."
+        },
+        "moq": {
+          "type": "number",
+          "description": "Minimum order quantity for the product."
+        },
+        "availableStock": {
+          "type": "number",
+          "description": "Number of units currently in stock."
+        }
+      },
+      "required": [
+        "id",
+        "supplierId",
+        "name",
+        "description",
+        "categoryId",
+        "imageUrl",
+        "price",
+        "moq",
+        "availableStock"
+      ]
+    },
+    "Category": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Category",
+      "type": "object",
+      "description": "Represents a category of products.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the category."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the category."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the category."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description"
+      ]
+    },
+    "Order": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Order",
+      "type": "object",
+      "description": "Represents an order placed by a buyer.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the order."
+        },
+        "buyerId": {
+          "type": "string",
+          "description": "Reference to Buyer. (Relationship: Buyer 1:N Order)"
+        },
+        "orderDate": {
+          "type": "string",
+          "description": "Date and time when the order was placed.",
+          "format": "date-time"
+        },
+        "totalAmount": {
+          "type": "number",
+          "description": "Total amount of the order."
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the order (e.g., pending, processing, shipped, delivered)."
+        },
+        "trackingNumber": {
+          "type": "string",
+          "description": "Tracking number for the shipment."
+        }
+      },
+      "required": [
+        "id",
+        "buyerId",
+        "orderDate",
+        "totalAmount",
+        "status"
+      ]
+    },
+    "OrderItem": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "OrderItem",
+      "type": "object",
+      "description": "Represents an item within an order.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the order item."
+        },
+        "orderId": {
+          "type": "string",
+          "description": "Reference to Order. (Relationship: Order 1:N OrderItem)"
+        },
+        "productId": {
+          "type": "string",
+          "description": "Reference to Product. (Relationship: Product 1:N OrderItem)"
+        },
+        "quantity": {
+          "type": "number",
+          "description": "Quantity of the product in the order item."
+        },
+        "unitPrice": {
+          "type": "number",
+          "description": "Price of a single unit of the product at the time of ordering."
+        }
+      },
+      "required": [
+        "id",
+        "orderId",
+        "productId",
+        "quantity",
+        "unitPrice"
+      ]
+    },
+    "Document": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Document",
+      "type": "object",
+      "description": "Represents a document uploaded to the system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the document."
+        },
+        "url": {
+          "type": "string",
+          "description": "URL of the uploaded document.",
+          "format": "uri"
+        },
+        "uploadDate": {
+          "type": "string",
+          "description": "Date and time when the document was uploaded.",
+          "format": "date-time"
+        },
+        "documentType": {
+          "type": "string",
+          "description": "Type of document (e.g., business license, tax ID)."
+        }
+      },
+      "required": [
+        "id",
+        "url",
+        "uploadDate",
+        "documentType"
+      ]
+    },
+    "Admin": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Admin",
+      "type": "object",
+      "description": "Represents an admin user of the marketplace platform.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the admin user."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:1 Admin)"
+        }
+      },
+      "required": [
+        "id",
+        "userId"
+      ]
+    },
+    "SocialMediaKit": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SocialMediaKit",
+      "type": "object",
+      "description": "Represents a social media kit generated for a product.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the social media kit."
+        },
+        "productId": {
+          "type": "string",
+          "description": "Reference to Product. (Relationship: Product 1:1 SocialMediaKit)"
+        },
+        "instagramPostUrl": {
+          "type": "string",
+          "description": "URL of the generated Instagram post image.",
+          "format": "uri"
+        },
+        "facebookCoverUrl": {
+          "type": "string",
+          "description": "URL of the generated Facebook cover image.",
+          "format": "uri"
+        },
+        "twitterHeaderUrl": {
+          "type": "string",
+          "description": "URL of the generated Twitter header image.",
+          "format": "uri"
+        },
+        "creationDate": {
+          "type": "string",
+          "description": "Date and time when the social media kit was generated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "productId",
+        "instagramPostUrl",
+        "facebookCoverUrl",
+        "twitterHeaderUrl",
+        "creationDate"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user account information. Used for authentication and general user details.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/documents/{documentId}",
+        "definition": {
+          "entityName": "Document",
+          "schema": {
+            "$ref": "#/backend/entities/Document"
+          },
+          "description": "Stores KYC documents uploaded by users. Path-based ownership ensures only the user or an admin can access these documents.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user (owner)."
+            },
+            {
+              "name": "documentId",
+              "description": "The unique identifier for the document."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/buyers/{buyerId}",
+        "definition": {
+          "entityName": "Buyer",
+          "schema": {
+            "$ref": "#/backend/entities/Buyer"
+          },
+          "description": "Stores buyer-specific data.",
+          "params": [
+            {
+              "name": "buyerId",
+              "description": "The unique identifier of the buyer."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/suppliers/{supplierId}",
+        "definition": {
+          "entityName": "Supplier",
+          "schema": {
+            "$ref": "#/backend/entities/Supplier"
+          },
+          "description": "Stores supplier-specific data.",
+          "params": [
+            {
+              "name": "supplierId",
+              "description": "The unique identifier of the supplier."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/products/{productId}",
+        "definition": {
+          "entityName": "Product",
+          "schema": {
+            "$ref": "#/backend/entities/Product"
+          },
+          "description": "Stores product listings. Includes 'supplierId' for authorization independence.",
+          "params": [
+            {
+              "name": "productId",
+              "description": "The unique identifier of the product."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/categories/{categoryId}",
+        "definition": {
+          "entityName": "Category",
+          "schema": {
+            "$ref": "#/backend/entities/Category"
+          },
+          "description": "Stores product category information.",
+          "params": [
+            {
+              "name": "categoryId",
+              "description": "The unique identifier of the category."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/orders/{orderId}",
+        "definition": {
+          "entityName": "Order",
+          "schema": {
+            "$ref": "#/backend/entities/Order"
+          },
+          "description": "Stores order information. Includes 'buyerId' for easy querying and access control.",
+          "params": [
+            {
+              "name": "orderId",
+              "description": "The unique identifier of the order."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/order_items/{orderItemId}",
+        "definition": {
+          "entityName": "OrderItem",
+          "schema": {
+            "$ref": "#/backend/entities/OrderItem"
+          },
+          "description": "Stores individual items within an order.",
+          "params": [
+            {
+              "name": "orderItemId",
+              "description": "The unique identifier of the order item."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_admin/{userId}",
+        "definition": {
+          "entityName": "Admin",
+          "schema": {
+            "$ref": "#/backend/entities/Admin"
+          },
+          "description": "Collection used to determine admin status. Existence of a document grants admin privileges.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/social_media_kits/{socialMediaKitId}",
+        "definition": {
+          "entityName": "SocialMediaKit",
+          "schema": {
+            "$ref": "#/backend/entities/SocialMediaKit"
+          },
+          "description": "Stores social media kits generated for products.",
+          "params": [
+            {
+              "name": "socialMediaKitId",
+              "description": "The unique identifier of the social media kit."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "This Firestore data structure is designed to support a B2B wholesale art marketplace, focusing on efficient supplier onboarding, product catalog management, and buyer order processing. It prioritizes Authorization Independence and Query-ability, crucial for security and scalability. Central to this design is the denormalization of authorization data and structural segregation to ensure secure and efficient data access.\n\nAuthorization Independence is achieved by denormalizing user roles directly into the documents requiring authorization checks. For instance, the `products` collection includes the `supplierId`, allowing rules to verify ownership based solely on the document content and `request.auth.uid` without needing `get()` calls. Similarly, admin roles are managed via document existence in the `/roles_admin/{uid}` collection.\n\nTo support QAPs (Rules are Not Filters), structural segregation is employed. Private user data such as KYC documents is stored in user-specific subcollections (`/users/{userId}/documents/{documentId}`), while publicly accessible product listings reside in the root `/products` collection. This segregation allows for secure `list` operations, ensuring that buyers can only view approved products, and suppliers can only manage their products. Role-based access (DBAC) is enforced using the existence of documents in the `/roles_admin/{uid}` collection, granting admin privileges based on user authentication.\n\nThe User and related profiles (Buyer, Supplier, Admin) are separated. There is a 1:1 relationship between Users and respective Profiles (Buyer, Supplier, Admin)."
+  }
+}

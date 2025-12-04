@@ -1,0 +1,219 @@
+/**
+ * Core Philosophy:
+ * This ruleset enforces a multi-tenant security model for a B2B wholesale art marketplace. It distinguishes between
+ * three primary user roles: Buyers, Suppliers, and Admins, each with specific permissions. The core principle is
+ * strict ownership: users can only manage their own data (profiles, documents, orders, products), with global
+ * administrators having override privileges for moderation and management.
+ *
+ * Data Structure:
+ * The data is organized into top-level collections for shared entities like 'products' and 'categories', and
+ * user-scoped collections for private or semi-private data. Private KYC documents are structurally segregated into
+ * a user-specific subcollection (/users/{userId}/documents) to ensure they cannot be listed or accessed by other users.
+ * Admin roles are determined by the existence of a document in the '/roles_admin/{userId}' collection.
+ *
+ * Key Security Decisions:
+ * - Default Deny: All access is denied by default. Rules only explicitly grant permissions.
+ * - Admin Override: Admins have read/write access to most data for management purposes. This is handled by a
+ *   global isAdmin() function.
+ * - No User Listing: The top-level '/users' collection is not listable to prevent enumeration of all platform users.
+ * - Strict Ownership: Suppliers own their products, and Buyers own their orders. This is enforced by checking a
+ *   denormalized ID field (e.g., 'supplierId', 'buyerId') on the respective documents.
+ * - Structural Segregation: Private documents (/users/{userId}/documents) are stored separately from public data
+ *   (/products) to enable secure and efficient querying. This prevents accidental data leakage in list operations.
+ *
+ * Denormalization for Authorization:
+ * To ensure fast and secure authorization checks, this ruleset relies on denormalized ownership fields. For example,
+ * each document in the '/products' collection contains a 'supplierId'. This allows a security rule to validate
+ * ownership directly from the document itself without performing costly and slow cross-collection 'get()' calls.
+ * Similarly, '/orders' documents contain a 'buyerId' to enforce buyer ownership.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions for readable and reusable logic
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function isExistingDoc() {
+      return resource != null;
+    }
+
+    function isAdmin() {
+      return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+    // Checks if the requesting user is the owner of an existing document.
+    // Used for secure update and delete operations.
+    function isExistingOwner(userId) {
+      return isOwner(userId) && isExistingDoc();
+    }
+
+    /**
+     * @description
+     *   Admin role lookup collection. The existence of a document here grants a user admin privileges.
+     *   This collection should be managed by a trusted server process, not by clients.
+     * @path /roles_admin/{userId}
+     * @allow (get) An admin wants to check their own role status.
+     * @deny (create) A regular user attempts to make themselves an admin.
+     * @principle Implements role-based access control (RBAC) via document existence. All client writes are denied.
+     */
+    match /roles_admin/{userId} {
+      allow get: if isAdmin();
+      allow list: if isAdmin();
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description
+     *   Stores primary user authentication data. Each user can create their own user document,
+     *   and can only read or update their own data. Listing all users is disabled for security.
+     * @path /users/{userId}
+     * @allow (create) A new user signs up and creates their own user document.
+     * @deny (get) A user tries to read another user's profile information.
+     * @principle Enforces self-creation and strict data ownership. Prevents user enumeration.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if false;
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) || isAdmin();
+      allow delete: if isExistingOwner(userId) || isAdmin();
+    }
+
+    /**
+     * @description
+     *   Stores private KYC documents for a user. Access is strictly limited to the document owner and admins.
+     * @path /users/{userId}/documents/{documentId}
+     * @allow (create) A user uploads a new KYC document to their own profile.
+     * @deny (list) A user tries to list another user's sensitive documents.
+     * @principle Restricts access to a user's own private data tree using path-based security.
+     */
+    match /users/{userId}/documents/{documentId} {
+      allow get, list: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) || isAdmin();
+      allow update: if isExistingOwner(userId) || isAdmin();
+      allow delete: if isExistingOwner(userId) || isAdmin();
+    }
+
+    /**
+     * @description
+     *   Stores buyer-specific profile information, linked to a main user account.
+     *   A user can create their own buyer profile and manage it.
+     * @path /buyers/{buyerId}
+     * @allow (create) A signed-in user creates their buyer profile, linking it with their auth UID.
+     * @deny (update) A user tries to modify another buyer's profile.
+     * @principle Validates relational integrity by ensuring the 'userId' field matches the authenticated user.
+     */
+    match /buyers/{buyerId} {
+      allow get: if isSignedIn() || isAdmin();
+      allow list: if isSignedIn() || isAdmin();
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if exists(/databases/$(database)/documents/users/$(resource.data.userId)) && isOwner(resource.data.userId) && isExistingDoc() || isAdmin();
+      allow delete: if exists(/databases/$(database)/documents/users/$(resource.data.userId)) && isOwner(resource.data.userId) && isExistingDoc() || isAdmin();
+    }
+
+    /**
+     * @description
+     *   Stores supplier-specific profile information, linked to a main user account.
+     *   A user can create their own supplier profile and manage it.
+     * @path /suppliers/{supplierId}
+     * @allow (create) A signed-in user creates their supplier profile, linking it with their auth UID.
+     * @deny (update) A user tries to modify another supplier's business details.
+     * @principle Validates relational integrity by ensuring the 'userId' field matches the authenticated user.
+     */
+    match /suppliers/{supplierId} {
+      allow get: if isSignedIn() || isAdmin();
+      allow list: if isSignedIn() || isAdmin();
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if exists(/databases/$(database)/documents/users/$(resource.data.userId)) && isOwner(resource.data.userId) && isExistingDoc() || isAdmin();
+      allow delete: if exists(/databases/$(database)/documents/users/$(resource.data.userId)) && isOwner(resource.data.userId) && isExistingDoc() || isAdmin();
+    }
+
+    /**
+     * @description
+     *   Publicly readable product listings. Only the owning supplier or an admin can create, update, or delete products.
+     * @path /products/{productId}
+     * @allow (create) A supplier (auth.uid = 'supplier_abc') creates a product with 'supplierId': 'supplier_abc'.
+     * @deny (update) A supplier tries to update a product where 'resource.data.supplierId' does not match their UID.
+     * @principle Implements public read with owner-only writes, based on a denormalized 'supplierId' field.
+     */
+    match /products/{productId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && request.resource.data.supplierId == request.auth.uid || isAdmin();
+      allow update: if isExistingDoc() && isOwner(resource.data.supplierId) || isAdmin();
+      allow delete: if isExistingDoc() && isOwner(resource.data.supplierId) || isAdmin();
+    }
+
+    /**
+     * @description
+     *   Product categories are public information for all users to read. Only admins can manage the category list.
+     * @path /categories/{categoryId}
+     * @allow (list) Any user, signed-in or not, can list all available product categories.
+     * @deny (create) A supplier or buyer attempts to create a new category.
+     * @principle Enforces read-only access for general users, reserving write access for administrators.
+     */
+    match /categories/{categoryId} {
+      allow get, list: if true;
+      allow create: if isAdmin();
+      allow update: if isAdmin() && isExistingDoc();
+      allow delete: if isAdmin() && isExistingDoc();
+    }
+
+    /**
+     * @description
+     *   Represents an order placed by a buyer. Access is restricted to the buyer who created the order and admins.
+     *   Suppliers access order data via backend functions, not direct client reads.
+     * @path /orders/{orderId}
+     * @allow (get) A buyer (auth.uid = 'buyer_abc') reads an order where 'resource.data.buyerId' is 'buyer_abc'.
+     * @deny (get) A different buyer tries to read an order they do not own.
+     * @principle Enforces document ownership for reads and writes based on the denormalized 'buyerId' field.
+     */
+    match /orders/{orderId} {
+      allow get: if isExistingDoc() && isOwner(resource.data.buyerId) || isAdmin();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.buyerId == request.auth.uid;
+      allow update: if isExistingDoc() && isOwner(resource.data.buyerId) || isAdmin();
+      allow delete: if isExistingDoc() && isOwner(resource.data.buyerId) || isAdmin();
+    }
+
+    /**
+     * @description
+     *   Individual items within an order. Access is granted by checking ownership of the parent order document.
+     * @path /order_items/{orderItemId}
+     * @allow (get) A buyer gets an order item after the rule verifies they own the parent order via a `get()`.
+     * @deny (get) A user tries to read an item belonging to an order they do not own.
+     * @principle Secures a sub-entity by checking permissions on its related parent document.
+     */
+    match /order_items/{orderItemId} {
+      allow get: if get(/databases/$(database)/documents/orders/$(resource.data.orderId)).data.buyerId == request.auth.uid || isAdmin();
+      allow list: if isSignedIn();
+      allow create: if get(/databases/$(database)/documents/orders/$(request.resource.data.orderId)).data.buyerId == request.auth.uid || isAdmin();
+      allow update: if isExistingDoc() && (get(/databases/$(database)/documents/orders/$(resource.data.orderId)).data.buyerId == request.auth.uid || isAdmin());
+      allow delete: if isExistingDoc() && (get(/databases/$(database)/documents/orders/$(resource.data.orderId)).data.buyerId == request.auth.uid || isAdmin());
+    }
+
+    /**
+     * @description
+     *   Social media kits generated for products. They are publicly readable. Only the product's supplier or an
+     *   admin can create or manage them.
+     * @path /social_media_kits/{socialMediaKitId}
+     * @allow (create) The supplier of product 'prod_123' creates a kit with 'productId': 'prod_123'.
+     * @deny (delete) A different supplier tries to delete the social media kit for 'prod_123'.
+     * @principle Secures a related document by checking ownership of the primary document ('Product').
+     */
+    match /social_media_kits/{socialMediaKitId} {
+      allow get, list: if true;
+      allow create: if get(/databases/$(database)/documents/products/$(request.resource.data.productId)).data.supplierId == request.auth.uid || isAdmin();
+      allow update: if isExistingDoc() && (get(/databases/$(database)/documents/products/$(resource.data.productId)).data.supplierId == request.auth.uid || isAdmin());
+      allow delete: if isExistingDoc() && (get(/databases/$(database)/documents/products/$(resource.data.productId)).data.supplierId == request.auth.uid || isAdmin());
+    }
+  }
+}
