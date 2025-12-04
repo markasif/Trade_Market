@@ -19,18 +19,21 @@ function BuyerHeader() {
     return (
         <header className="flex w-full items-center justify-center border-b bg-card">
             <div className="flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-                <div className="flex items-center gap-4 text-foreground">
-                    <Logo3 className="h-6 w-6 text-primary" />
-                    <h2 className="text-lg font-bold tracking-tight">Marketplace</h2>
+                <div className="flex items-center gap-8 text-foreground">
+                    <Link href="/" className="flex items-center gap-4">
+                      <Logo3 className="h-6 w-6 text-primary" />
+                      <h2 className="hidden sm:block text-lg font-bold tracking-tight">Marketplace</h2>
+                    </Link>
+                    <nav className="hidden items-center gap-8 md:flex">
+                        {navLinks.map((link) => (
+                            <Link key={link.href} href={link.href} className="text-sm font-medium text-muted-foreground hover:text-foreground">
+                                {link.label}
+                            </Link>
+                        ))}
+                    </nav>
                 </div>
-                <nav className="hidden items-center gap-8 md:flex">
-                    {navLinks.map((link) => (
-                        <Link key={link.href} href={link.href} className="text-sm font-medium text-muted-foreground hover:text-foreground">
-                            {link.label}
-                        </Link>
-                    ))}
-                </nav>
-                <div className="flex flex-1 justify-end items-center gap-3">
+                
+                <div className="flex items-center gap-3">
                     <Button variant="ghost" size="icon">
                         <Bell className="h-5 w-5" />
                         <span className="sr-only">Notifications</span>
