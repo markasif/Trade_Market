@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm, SubmitHandler } from "react-hook-form";
+import { useForm, SubmitHandler, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 function FileUploadZone({ field, label, error }: { field: any, label: string, error?: string }) {
-    const [fileName, setFileName] = useState<string | null>(null);
+    const [fileName, setFileName] = useState<string | null>(field.value?.name || null);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
@@ -66,7 +66,7 @@ export default function SupplierRegistrationPage() {
     const [currentTab, setCurrentTab] = useState("company-info");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const { register, handleSubmit, trigger, getValues, formState: { errors } } = useForm<FormValues>({
+    const { register, handleSubmit, trigger, control, formState: { errors } } = useForm<FormValues>({
         resolver: zodResolver(formSchema),
         mode: "onTouched"
     });
@@ -149,15 +149,27 @@ export default function SupplierRegistrationPage() {
                     </TabsContent>
                     <TabsContent value="documents" className="mt-8">
                         <div className="space-y-6">
-                            <FileUploadZone 
-                                label="Business License"
-                                field={register("businessLicense")}
-                                error={errors.businessLicense?.message}
+                            <Controller
+                                control={control}
+                                name="businessLicense"
+                                render={({ field }) => (
+                                    <FileUploadZone 
+                                        label="Business License"
+                                        field={field}
+                                        error={errors.businessLicense?.message}
+                                    />
+                                )}
                             />
-                            <FileUploadZone 
-                                label="Tax ID / GST Document"
-                                field={register("taxIdDocument")}
-                                error={errors.taxIdDocument?.message}
+                             <Controller
+                                control={control}
+                                name="taxIdDocument"
+                                render={({ field }) => (
+                                    <FileUploadZone 
+                                        label="Tax ID / GST Document"
+                                        field={field}
+                                        error={errors.taxIdDocument?.message}
+                                    />
+                                )}
                             />
                         </div>
                     </TabsContent>
@@ -165,7 +177,7 @@ export default function SupplierRegistrationPage() {
             </CardContent>
             <CardFooter className="flex flex-col-reverse sm:flex-row items-center justify-end gap-3 p-8">
                 {currentTab === "documents" && (
-                    <Button variant="outline" onClick={() => setCurrentTab("company-info")}>Back</Button>
+                    <Button type="button" variant="outline" onClick={() => setCurrentTab("company-info")}>Back</Button>
                 )}
                 {currentTab === "company-info" ? (
                     <Button type="button" onClick={handleNext}>Next</Button>

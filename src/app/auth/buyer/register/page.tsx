@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm, SubmitHandler } from "react-hook-form";
+import { useForm, SubmitHandler, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 function FileUploadZone({ field, label, error }: { field: any, label: string, error?: string }) {
-    const [fileName, setFileName] = useState<string | null>(null);
+    const [fileName, setFileName] = useState<string | null>(field.value?.name || null);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
@@ -63,7 +63,7 @@ export default function BuyerRegistrationPage() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
+  const { register, handleSubmit, control, formState: { errors } } = useForm<FormValues>({
       resolver: zodResolver(formSchema),
       mode: "onTouched"
   });
@@ -138,15 +138,27 @@ export default function BuyerRegistrationPage() {
                     <h3 className="text-lg font-semibold">Business Verification Documents</h3>
                     <p className="text-sm text-muted-foreground">Required for wholesale purchasing.</p>
                 </div>
-                <FileUploadZone 
-                    label="GST Certificate"
-                    field={register("gstCertificate")}
-                    error={errors.gstCertificate?.message}
+                <Controller
+                  control={control}
+                  name="gstCertificate"
+                  render={({ field }) => (
+                    <FileUploadZone 
+                        label="GST Certificate"
+                        field={field}
+                        error={errors.gstCertificate?.message}
+                    />
+                  )}
                 />
-                <FileUploadZone 
-                    label="Business Registration Proof"
-                    field={register("businessRegistration")}
-                    error={errors.businessRegistration?.message}
+                <Controller
+                  control={control}
+                  name="businessRegistration"
+                  render={({ field }) => (
+                    <FileUploadZone 
+                        label="Business Registration Proof"
+                        field={field}
+                        error={errors.businessRegistration?.message}
+                    />
+                  )}
                 />
             </div>
 
