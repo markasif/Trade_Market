@@ -4,12 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search } from "lucide-react";
+import Link from "next/link";
 
 const flaggedSuppliers = [
-    { name: "Global Imports LLC", date: "2023-10-26", reason: "Document Unclear" },
-    { name: "Crafty Goods Co.", date: "2023-10-25", reason: "Address Mismatch" },
-    { name: "Tech Solutions Inc.", date: "2023-10-25", reason: "Potential Duplicate" },
-    { name: "Farm Fresh Organics", date: "2023-10-24", reason: "Document Unclear" },
+    { id: "sup-003", name: "Tech Solutions Inc.", date: "2023-10-25", reason: "Potential Duplicate" },
+    { id: "sup-004", name: "Global Imports LLC", date: "2023-10-26", reason: "Document Unclear" },
+    { id: "sup-005", name: "Crafty Goods Co.", date: "2023-10-25", reason: "Address Mismatch" },
 ]
 
 export default function AdminSupplierReviewPage() {
@@ -37,7 +37,7 @@ export default function AdminSupplierReviewPage() {
                                 <TableHead>Supplier Name</TableHead>
                                 <TableHead>Date Submitted</TableHead>
                                 <TableHead>AI Flag Reason</TableHead>
-                                <TableHead>Actions</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -48,9 +48,12 @@ export default function AdminSupplierReviewPage() {
                                     <TableCell>
                                         <Badge variant="outline" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800">{supplier.reason}</Badge>
                                     </TableCell>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                                        <Button variant="secondary" className="bg-green-600 text-white hover:bg-green-700">Approve</Button>
-                                        <Button variant="destructive">Reject</Button>
+                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <Button asChild>
+                                            <Link href={`/admin/suppliers/review/${supplier.id}`}>
+                                                Review Application
+                                            </Link>
+                                        </Button>
                                     </td>
                                 </TableRow>
                             ))}
