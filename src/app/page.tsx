@@ -64,7 +64,7 @@ export default function HomePage() {
                   <Link href="/products">Browse All Products</Link>
                 </Button>
                 <Button size="lg" variant="secondary" className="h-12 px-5 text-base font-bold bg-background text-foreground hover:bg-background/90" asChild>
-                  <Link href="/supplier/register">Become a Supplier</Link>
+                  <Link href="/auth/supplier/register">Become a Supplier</Link>
                 </Button>
               </div>
             </div>
