@@ -22,6 +22,7 @@ const formSchema = z.object({
     address: z.string().min(1, "Business address is required"),
     businessLicense: z.instanceof(File).refine(file => file.size > 0, "Business license is required."),
     taxIdDocument: z.instanceof(File).refine(file => file.size > 0, "Tax ID document is required."),
+    bankAccountProof: z.instanceof(File).refine(file => file.size > 0, "Bank account proof is required."),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -168,6 +169,17 @@ export default function SupplierRegistrationPage() {
                                         label="Tax ID / GST Document"
                                         field={field}
                                         error={errors.taxIdDocument?.message}
+                                    />
+                                )}
+                            />
+                             <Controller
+                                control={control}
+                                name="bankAccountProof"
+                                render={({ field }) => (
+                                    <FileUploadZone 
+                                        label="Bank Account Proof"
+                                        field={field}
+                                        error={errors.bankAccountProof?.message}
                                     />
                                 )}
                             />
