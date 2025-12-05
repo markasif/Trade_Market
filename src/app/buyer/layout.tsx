@@ -23,6 +23,7 @@ function BuyerHeader() {
     const router = useRouter();
 
     const handleLogout = async () => {
+        if (!supabase) return;
         await supabase.auth.signOut();
         router.push('/');
     };

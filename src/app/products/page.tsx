@@ -18,6 +18,7 @@ export default function ProductsPage() {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
+        if (!supabase) return;
         const fetchProducts = async () => {
             setIsLoading(true);
             const { data, error } = await supabase.from('products').select('*');
@@ -85,7 +86,7 @@ export default function ProductsPage() {
                               <CardHeader className="p-0">
                                   <Link href={`/products/${product.id}`}>
                                       <Image 
-                                          src={product.imageUrls[0] || "/placeholder.svg"} 
+                                          src={product.imageUrls?.[0] || "/placeholder.svg"} 
                                           alt={product.name}
                                           width={400}
                                           height={300}

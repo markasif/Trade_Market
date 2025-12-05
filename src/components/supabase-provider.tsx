@@ -2,11 +2,11 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Session, SupabaseClient } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase-client';
+import { getSupabase } from '@/lib/supabase-client';
 import { UserRole } from '@/lib/types';
 
 type SupabaseContextType = {
-  supabase: SupabaseClient;
+  supabase: SupabaseClient | null;
   session: Session | null;
   userRole: UserRole;
   isLoading: boolean;
@@ -15,27 +15,32 @@ type SupabaseContextType = {
 const SupabaseContext = createContext<SupabaseContextType | undefined>(undefined);
 
 export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
+  const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [userRole, setUserRole] = useState<UserRole>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Initialize Supabase client on the client-side
+    const supabaseClient = getSupabase();
+    setSupabase(supabaseClient);
+
     const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await supabaseClient.auth.getSession();
       setSession(session);
       if (session) {
-        await fetchUserRole(session.user.id);
+        await fetchUserRole(supabaseClient, session.user.id);
       }
       setIsLoading(false);
     };
 
     getSession();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(
+    const { data: authListener } = supabaseClient.auth.onAuthStateChange(
       async (event, session) => {
         setSession(session);
         if (session) {
-          await fetchUserRole(session.user.id);
+          await fetchUserRole(supabaseClient, session.user.id);
         } else {
           setUserRole(null);
         }
@@ -48,9 +53,9 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  const fetchUserRole = async (userId: string) => {
+  const fetchUserRole = async (client: SupabaseClient, userId: string) => {
     // Check admins table
-    const { data: admin, error: adminError } = await supabase
+    const { data: admin, error: adminError } = await client
       .from('admins')
       .select('user_id')
       .eq('user_id', userId)
@@ -62,7 +67,7 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
     }
 
     // Check suppliers table
-    const { data: supplier, error: supplierError } = await supabase
+    const { data: supplier, error: supplierError } = await client
       .from('suppliers')
       .select('user_id')
       .eq('user_id', userId)
@@ -74,7 +79,7 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
     }
 
     // Check buyers table
-    const { data: buyer, error: buyerError } = await supabase
+    const { data: buyer, error: buyerError } = await client
         .from('buyers')
         .select('user_id')
         .eq('user_id', userId)
@@ -107,5 +112,11 @@ export const useSupabase = () => {
   if (context === undefined) {
     throw new Error('useSupabase must be used within a SupabaseProvider');
   }
-  return context;
+  if (context.supabase === null) {
+      // This can happen briefly on the first render, so we'll handle it gracefully
+      // in components, but for hooks that absolutely need it, we could throw.
+      // For now, we'll allow it to be null initially.
+  }
+  // We cast to remove null, as components will be structured to handle the loading state.
+  return context as SupabaseContextType & { supabase: SupabaseClient };
 };

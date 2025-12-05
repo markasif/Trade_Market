@@ -15,8 +15,8 @@ export default function BuyerOrdersPage() {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
+        if (!supabase || !session) return;
         const fetchOrders = async () => {
-            if (!session) return;
             setIsLoading(true);
             const { data, error } = await supabase
                 .from('orders')

@@ -19,6 +19,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
     useEffect(() => {
+        if (!supabase) return;
         const fetchProduct = async () => {
             setIsLoading(true);
             const { data, error } = await supabase
@@ -67,7 +68,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
         return <div className="text-center">Product not found.</div>
     }
 
-    const currentImage = selectedImage || product.imageUrls[0];
+    const currentImage = selectedImage || (product.imageUrls && product.imageUrls.length > 0 ? product.imageUrls[0] : '/placeholder.svg');
     const sortedPricingTiers = product.pricingTiers.sort((a, b) => a.minQuantity - b.minQuantity);
     
     return (
