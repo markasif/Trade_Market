@@ -1,23 +1,22 @@
+'use client';
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search } from "lucide-react";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
-
-const products = [
-    { id: 'product-widget-main', name: 'Premium Industrial Widget', price: '$22.50' },
-    { id: 'product-running-shoes', name: 'Sleek Running Shoes', price: '$89.99' },
-    { id: 'product-headphones', name: 'Wireless Headphones', price: '$129.99' },
-    { id: 'product-chrono-watch', name: 'Chronograph Watch', price: '$249.99' },
-];
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection } from "firebase/firestore";
+import { Product, WithId } from "@/lib/types";
 
 export default function ProductsPage() {
+    const firestore = useFirestore();
+    const productsQuery = useMemoFirebase(() => collection(firestore, 'products'), [firestore]);
+    const { data: products, isLoading } = useCollection<Product>(productsQuery);
+
     return (
       <div className="relative flex min-h-screen w-full flex-col">
         <Header />
@@ -49,34 +48,46 @@ export default function ProductsPage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {products.map(product => {
-                      const img = PlaceHolderImages.find(p => p.id === product.id);
+                  {isLoading && Array.from({ length: 8 }).map((_, i) => (
+                      <Card key={i} className="overflow-hidden group">
+                          <CardHeader className="p-0">
+                               <div className="w-full bg-muted aspect-[4/3]"></div>
+                          </CardHeader>
+                          <CardContent className="p-4">
+                              <div className="h-6 bg-muted rounded w-3/4 mb-2"></div>
+                              <div className="h-4 bg-muted rounded w-1/2"></div>
+                          </CardContent>
+                          <CardFooter className="p-4 flex justify-between items-center">
+                              <div className="h-8 bg-muted rounded w-20"></div>
+                              <div className="h-10 bg-muted rounded w-16"></div>
+                          </CardFooter>
+                      </Card>
+                  ))}
+                  {products?.map((product: WithId<Product>) => {
+                      const firstTierPrice = product.pricingTiers?.length > 0 ? product.pricingTiers[0].price : 0;
                       return (
                           <Card key={product.id} className="overflow-hidden group">
                               <CardHeader className="p-0">
-                                  {img && (
-                                      <Link href={`/products/${product.id}`}>
-                                          <Image 
-                                              src={img.imageUrl} 
-                                              alt={img.description}
-                                              width={400}
-                                              height={300}
-                                              className="w-full h-auto aspect-[4/3] object-cover group-hover:scale-105 transition-transform duration-300"
-                                              data-ai-hint={img.imageHint}
-                                          />
-                                      </Link>
-                                  )}
+                                  <Link href={`/products/${product.id}`}>
+                                      <Image 
+                                          src={product.imageUrls[0] || "/placeholder.svg"} 
+                                          alt={product.name}
+                                          width={400}
+                                          height={300}
+                                          className="w-full h-auto aspect-[4/3] object-cover group-hover:scale-105 transition-transform duration-300"
+                                      />
+                                  </Link>
                               </CardHeader>
                               <CardContent className="p-4">
                                   <CardTitle className="text-lg mb-2">
                                       <Link href={`/products/${product.id}`}>{product.name}</Link>
                                   </CardTitle>
                                   <CardDescription>
-                                      Min. Order: 20 units
+                                      Min. Order: {product.moq} units
                                   </CardDescription>
                               </CardContent>
                               <CardFooter className="p-4 flex justify-between items-center">
-                                  <p className="text-lg font-bold">{product.price}</p>
+                                  <p className="text-lg font-bold">${firstTierPrice.toFixed(2)}</p>
                                   <Button asChild>
                                       <Link href={`/products/${product.id}`}>View</Link>
                                   </Button>
