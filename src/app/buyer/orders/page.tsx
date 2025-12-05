@@ -4,21 +4,34 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useCollection, useUser, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, query, where } from "firebase/firestore";
 import Link from "next/link";
 import { Order, WithId } from "@/lib/types";
+import { useSupabase } from "@/components/supabase-provider";
+import { useEffect, useState } from "react";
 
 export default function BuyerOrdersPage() {
-    const { user } = useUser();
-    const firestore = useFirestore();
+    const { supabase, session } = useSupabase();
+    const [orders, setOrders] = useState<WithId<Order>[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const ordersQuery = useMemoFirebase(() => {
-        if (!user) return null;
-        return query(collection(firestore, 'orders'), where('buyerId', '==', user.uid));
-    }, [firestore, user]);
-
-    const { data: orders, isLoading } = useCollection<Order>(ordersQuery);
+    useEffect(() => {
+        const fetchOrders = async () => {
+            if (!session) return;
+            setIsLoading(true);
+            const { data, error } = await supabase
+                .from('orders')
+                .select('*')
+                .eq('buyer_id', session.user.id);
+            
+            if (error) {
+                console.error("Error fetching orders:", error);
+            } else {
+                setOrders(data as WithId<Order>[]);
+            }
+            setIsLoading(false);
+        }
+        fetchOrders();
+    }, [session, supabase]);
 
     const getStatusBadge = (status: string) => {
         switch (status.toLowerCase()) {
@@ -81,7 +94,7 @@ export default function BuyerOrdersPage() {
                             )}
                             {orders && orders.map((order: WithId<Order>) => (
                                 <TableRow key={order.id}>
-                                    <TableCell className="font-mono text-xs">{order.id}</TableCell>
+                                    <TableCell className="font-mono text-xs">{order.id.substring(0,8)}</TableCell>
                                     <TableCell>{new Date(order.orderDate).toLocaleDateString()}</TableCell>
                                     <TableCell>
                                         <Badge

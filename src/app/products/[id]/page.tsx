@@ -4,20 +4,42 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { useDoc, useFirestore, useMemoFirebase } from "@/firebase";
-import { doc } from "firebase/firestore";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import { Product } from "@/lib/types";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { useSupabase } from "@/components/supabase-provider";
 
 export default function ProductDetailPage({ params }: { params: { id: string } }) {
-    const firestore = useFirestore();
-    const productRef = useMemoFirebase(() => doc(firestore, "products", params.id), [firestore, params.id]);
-    const { data: product, isLoading } = useDoc<Product>(productRef);
+    const { supabase } = useSupabase();
+    const [product, setProduct] = useState<Product | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchProduct = async () => {
+            setIsLoading(true);
+            const { data, error } = await supabase
+                .from('products')
+                .select('*')
+                .eq('id', params.id)
+                .single();
+            
+            if (error) {
+                console.error("Error fetching product:", error);
+                setProduct(null);
+            } else {
+                setProduct(data as Product);
+                if (data.imageUrls && data.imageUrls.length > 0) {
+                    setSelectedImage(data.imageUrls[0]);
+                }
+            }
+            setIsLoading(false);
+        }
+        fetchProduct();
+    }, [supabase, params.id]);
 
     if (isLoading) {
         return (
@@ -132,7 +154,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                 <AccordionItem value="item-1" className="border-b">
                     <AccordionTrigger className="font-bold text-base">Specifications</AccordionTrigger>
                     <AccordionContent>
-                       <p>SKU: {product.id.slice(0, 8).toUpperCase()}</p>
+                       <p>SKU: {(params.id as string).slice(0, 8).toUpperCase()}</p>
                        <p>Available Stock: {product.availableStock} Units</p>
                     </AccordionContent>
                 </AccordionItem>

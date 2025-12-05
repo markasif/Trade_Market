@@ -11,6 +11,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, CloudUpload } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/lib/supabase-client";
+import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
   businessName: z.string().min(1, "Business name is required"),
@@ -61,6 +63,7 @@ function FileUploadZone({ field, label, error }: { field: any, label: string, er
 
 export default function BuyerRegistrationPage() {
   const { toast } = useToast();
+  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { register, handleSubmit, control, formState: { errors } } = useForm<FormValues>({
@@ -70,14 +73,65 @@ export default function BuyerRegistrationPage() {
 
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
       setIsSubmitting(true);
-      // Placeholder for full flow
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      console.log("Buyer Form Data:", data);
-      toast({
-          title: "Registration Submitted",
-          description: "Your account is under review. We'll notify you once it's approved.",
-      });
-      setIsSubmitting(false);
+      try {
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+            email: data.email,
+            password: data.password,
+        });
+
+        if (authError) throw authError;
+        if (!authData.user) throw new Error("Registration failed, user not created.");
+        
+        const user = authData.user;
+        const userId = user.id;
+
+        const gstCertPath = `${userId}/gst_certificate_${data.gstCertificate.name}`;
+        const { error: gstUploadError } = await supabase.storage.from('kyc-documents').upload(gstCertPath, data.gstCertificate);
+        if (gstUploadError) throw gstUploadError;
+        const { data: { publicUrl: gstCertificateUrl } } = supabase.storage.from('kyc-documents').getPublicUrl(gstCertPath);
+
+        const bizRegPath = `${userId}/business_registration_${data.businessRegistration.name}`;
+        const { error: bizRegUploadError } = await supabase.storage.from('kyc-documents').upload(bizRegPath, data.businessRegistration);
+        if (bizRegUploadError) throw bizRegUploadError;
+        const { data: { publicUrl: businessRegistrationUrl } } = supabase.storage.from('kyc-documents').getPublicUrl(bizRegPath);
+        
+        const { error: dbError } = await supabase.from('buyers').insert({
+            id: userId,
+            user_id: userId,
+            business_name: data.businessName,
+            phone: data.phone,
+            shipping_address: data.shippingAddress,
+            gst_number: data.gstNumber,
+            account_status: 'pending',
+            gst_certificate_url: gstCertificateUrl,
+            business_registration_url: businessRegistrationUrl
+        });
+
+        if (dbError) throw dbError;
+
+        await supabase.from('users').insert({
+            id: userId,
+            user_type: 'buyer',
+            email: data.email,
+            first_name: '',
+            last_name: '',
+        });
+        
+        toast({
+            title: "Registration Submitted",
+            description: "Your account is under review. We'll notify you once it's approved.",
+        });
+        router.push('/buyer-dashboard');
+
+      } catch(error: any) {
+        toast({
+            variant: "destructive",
+            title: "Registration Failed",
+            description: error.message || "An unexpected error occurred.",
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
   };
 
   return (

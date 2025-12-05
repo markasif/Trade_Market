@@ -12,6 +12,17 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CloudUpload, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
+import { aiSupplierVetting } from "@/ai/flows/ai-supplier-vetting";
+import { supabase } from "@/lib/supabase-client";
+import { useRouter } from "next/navigation";
+
+const fileToDataUri = (file: File) => new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+});
+
 
 const formSchema = z.object({
     companyName: z.string().min(1, "Company name is required"),
@@ -64,6 +75,7 @@ function FileUploadZone({ field, label, error }: { field: any, label: string, er
 
 export default function SupplierRegistrationPage() {
     const { toast } = useToast();
+    const router = useRouter();
     const [currentTab, setCurrentTab] = useState("company-info");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -81,24 +93,86 @@ export default function SupplierRegistrationPage() {
     
     const onSubmit: SubmitHandler<FormValues> = async (data) => {
         setIsSubmitting(true);
-        // This is a placeholder for the full flow.
-        // In a real application, you would:
-        // 1. Create user with Firebase Auth: createUserWithEmailAndPassword(auth, data.email, data.password)
-        // 2. Upload files to Firebase Storage.
-        // 3. Get download URLs for the uploaded files.
-        // 4. Save supplier data (including document URLs) to Firestore.
-        // 5. Call the AI vetting flow.
+        try {
+            // 1. Create user with Supabase Auth
+            const { data: authData, error: authError } = await supabase.auth.signUp({
+                email: data.email,
+                password: data.password,
+            });
 
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 2000));
+            if (authError) throw authError;
+            if (!authData.user) throw new Error("Registration failed, user not created.");
+            
+            const user = authData.user;
+            const userId = user.id;
 
-        console.log("Form Data:", data);
+            // 2. Upload files to Supabase Storage
+            const bizLicensePath = `${userId}/business_license_${data.businessLicense.name}`;
+            const { error: licenseUploadError } = await supabase.storage.from('kyc-documents').upload(bizLicensePath, data.businessLicense);
+            if (licenseUploadError) throw licenseUploadError;
+            const { data: { publicUrl: businessLicenseUrl } } = supabase.storage.from('kyc-documents').getPublicUrl(bizLicensePath);
+            
+            const taxIdPath = `${userId}/tax_id_${data.taxIdDocument.name}`;
+            const { error: taxIdUploadError } = await supabase.storage.from('kyc-documents').upload(taxIdPath, data.taxIdDocument);
+            if (taxIdUploadError) throw taxIdUploadError;
+            const { data: { publicUrl: taxIdDocumentUrl } } = supabase.storage.from('kyc-documents').getPublicUrl(taxIdPath);
+            
+            const bankProofPath = `${userId}/bank_proof_${data.bankAccountProof.name}`;
+            const { error: bankProofUploadError } = await supabase.storage.from('kyc-documents').upload(bankProofPath, data.bankAccountProof);
+            if (bankProofUploadError) throw bankProofUploadError;
+            const { data: { publicUrl: bankAccountProofUrl } } = supabase.storage.from('kyc-documents').getPublicUrl(bankProofPath);
 
-        toast({
-            title: "Registration Submitted",
-            description: "Your application is being processed. We will notify you upon review.",
-        });
-        setIsSubmitting(false);
+            // 3. AI Vetting
+            const businessLicenseDataUri = await fileToDataUri(data.businessLicense);
+            const taxIdDocumentDataUri = await fileToDataUri(data.taxIdDocument);
+            const vettingResult = await aiSupplierVetting({
+                businessName: data.companyName,
+                businessLicenseDataUri,
+                taxIdDocumentDataUri,
+            });
+
+            // 4. Save supplier data to Supabase table
+            const accountStatus = vettingResult.isApproved ? 'active' : 'pending';
+
+            const { error: dbError } = await supabase.from('suppliers').insert({
+                id: userId,
+                user_id: userId,
+                company_name: data.companyName,
+                business_email: data.email,
+                contact_number: data.phone,
+                business_address: data.address,
+                gst_number: data.gstNumber,
+                business_license_url: businessLicenseUrl,
+                tax_id_document_url: taxIdDocumentUrl,
+                bank_account_proof_url: bankAccountProofUrl,
+                account_status: accountStatus,
+            });
+
+            if (dbError) throw dbError;
+
+            await supabase.from('users').insert({
+                id: userId,
+                user_type: 'supplier',
+                email: data.email
+            });
+
+            toast({
+                title: "Registration Submitted!",
+                description: vettingResult.isApproved 
+                    ? "Your account has been instantly approved! You can now log in." 
+                    : "Your application is under review. We'll notify you shortly."
+            });
+            router.push('/auth/login');
+
+        } catch (error: any) {
+            toast({
+                variant: "destructive",
+                title: "Registration Failed",
+                description: error.message || "An unexpected error occurred. Please try again.",
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
   return (

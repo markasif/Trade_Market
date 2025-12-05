@@ -6,15 +6,13 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { supabase } from '@/lib/supabase-client';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth, useFirestore } from '@/firebase';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -28,8 +26,6 @@ type FormValues = z.infer<typeof formSchema>;
 export default function LoginPage() {
   const { toast } = useToast();
   const router = useRouter();
-  const auth = useAuth();
-  const firestore = useFirestore();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
@@ -43,8 +39,19 @@ export default function LoginPage() {
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
     setIsSubmitting(true);
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
-      const user = userCredential.user;
+      const { data: signInData, error } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      });
+
+      if (error) {
+        throw error;
+      }
+      
+      const user = signInData.user;
+      if (!user) {
+        throw new Error("Login failed, user not found.");
+      }
 
       toast({
         title: 'Login Successful',
@@ -52,20 +59,20 @@ export default function LoginPage() {
       });
 
       // Role-based redirection
-      const adminDoc = await getDoc(doc(firestore, 'admins', user.uid));
-      if (adminDoc.exists()) {
+      const { data: admin } = await supabase.from('admins').select().eq('user_id', user.id).single();
+      if (admin) {
         router.push('/admin/dashboard');
         return;
       }
 
-      const supplierDoc = await getDoc(doc(firestore, 'suppliers', user.uid));
-      if (supplierDoc.exists()) {
+      const { data: supplier } = await supabase.from('suppliers').select().eq('user_id', user.id).single();
+      if (supplier) {
         router.push('/supplier/dashboard');
         return;
       }
 
-      const buyerDoc = await getDoc(doc(firestore, 'buyers', user.uid));
-      if (buyerDoc.exists()) {
+      const { data: buyer } = await supabase.from('buyers').select().eq('user_id', user.id).single();
+      if (buyer) {
         router.push('/buyer-dashboard');
         return;
       }

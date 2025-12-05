@@ -25,3 +25,5 @@ export type Order = {
     trackingNumber?: string;
     paymentProofUrl?: string;
 }
+
+export type UserRole = 'admin' | 'supplier' | 'buyer' | null;

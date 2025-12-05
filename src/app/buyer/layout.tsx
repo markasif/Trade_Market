@@ -4,10 +4,10 @@ import { Footer } from "@/components/footer";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bell, HelpCircle, Package, Receipt, ShoppingBag } from "lucide-react";
+import { Bell, HelpCircle, Package, Receipt, ShoppingBag, LogOut } from "lucide-react";
 import { Logo3 } from "@/components/icons";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { useUser } from "@/firebase";
+import { useSupabase } from "@/components/supabase-provider";
 import { useRouter } from "next/navigation";
 
 const userAvatar = PlaceHolderImages.find((img) => img.id === 'user-avatar-2');
@@ -19,17 +19,24 @@ const navLinks = [
 ];
 
 function BuyerHeader() {
-    const { user, isUserLoading } = useUser();
+    const { supabase, session, isLoading } = useSupabase();
     const router = useRouter();
 
-    if (isUserLoading) {
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        router.push('/');
+    };
+
+    if (isLoading) {
         return <header className="flex w-full items-center justify-center border-b bg-card h-16" />;
     }
 
-    if (!user) {
+    if (!session) {
         router.push('/auth/login');
         return null;
     }
+
+    const user = session.user;
 
     return (
         <header className="flex w-full items-center justify-center border-b bg-card">
@@ -58,9 +65,13 @@ function BuyerHeader() {
                         <span className="sr-only">Help</span>
                     </Button>
                     <Avatar className="h-10 w-10">
-                        {userAvatar && <AvatarImage src={user.photoURL || userAvatar.imageUrl} alt="User avatar" />}
+                        {userAvatar && <AvatarImage src={user.user_metadata.avatar_url || userAvatar.imageUrl} alt="User avatar" />}
                         <AvatarFallback>{user.email?.charAt(0).toUpperCase()}</AvatarFallback>
                     </Avatar>
+                     <Button variant="ghost" size="icon" onClick={handleLogout}>
+                        <LogOut className="h-5 w-5" />
+                        <span className="sr-only">Log Out</span>
+                    </Button>
                 </div>
             </div>
         </header>

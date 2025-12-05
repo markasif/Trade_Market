@@ -8,14 +8,29 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search } from "lucide-react";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection } from "firebase/firestore";
 import { Product, WithId } from "@/lib/types";
+import { useSupabase } from "@/components/supabase-provider";
+import { useEffect, useState } from "react";
 
 export default function ProductsPage() {
-    const firestore = useFirestore();
-    const productsQuery = useMemoFirebase(() => collection(firestore, 'products'), [firestore]);
-    const { data: products, isLoading } = useCollection<Product>(productsQuery);
+    const { supabase } = useSupabase();
+    const [products, setProducts] = useState<WithId<Product>[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchProducts = async () => {
+            setIsLoading(true);
+            const { data, error } = await supabase.from('products').select('*');
+            if (error) {
+                console.error("Error fetching products:", error);
+            } else {
+                setProducts(data as WithId<Product>[]);
+            }
+            setIsLoading(false);
+        }
+        fetchProducts();
+    }, [supabase]);
+
 
     return (
       <div className="relative flex min-h-screen w-full flex-col">
