@@ -1,20 +1,18 @@
-
 'use client';
 
 import { useState } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase-client';
+import Link from 'next/link';
+import { Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
-import Link from 'next/link';
+import { useSupabase } from '@/components/supabase-provider';
 
 const formSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -25,7 +23,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 export default function LoginPage() {
   const { toast } = useToast();
-  const router = useRouter();
+  const { supabase, setRedirectTo } = useSupabase();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
@@ -38,47 +36,32 @@ export default function LoginPage() {
 
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
     setIsSubmitting(true);
+    if (!supabase || !setRedirectTo) {
+      toast({
+        variant: 'destructive',
+        title: 'Login Failed',
+        description: 'Application is not ready. Please try again in a moment.',
+      });
+      setIsSubmitting(false);
+      return;
+    }
+    
     try {
       const { data: signInData, error } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
       });
 
-      if (error) {
-        throw error;
-      }
-      
-      const user = signInData.user;
-      if (!user) {
-        throw new Error("Login failed, user not found.");
-      }
+      if (error) throw error;
+      if (!signInData.user) throw new Error("Login failed, user not found.");
 
       toast({
         title: 'Login Successful',
         description: "Welcome back! We're redirecting you now...",
       });
-
-      // Role-based redirection
-      const { data: admin } = await supabase.from('admins').select().eq('user_id', user.id).single();
-      if (admin) {
-        router.push('/admin/dashboard');
-        return;
-      }
-
-      const { data: supplier } = await supabase.from('suppliers').select().eq('user_id', user.id).single();
-      if (supplier) {
-        router.push('/supplier/dashboard');
-        return;
-      }
-
-      const { data: buyer } = await supabase.from('buyers').select().eq('user_id', user.id).single();
-      if (buyer) {
-        router.push('/buyer-dashboard');
-        return;
-      }
       
-      // Fallback redirection if no specific role document is found
-      router.push('/');
+      // Let the provider handle redirection
+      setRedirectTo(true); 
 
     } catch (error: any) {
       console.error('Login Error:', error);

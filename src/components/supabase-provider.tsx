@@ -1,47 +1,92 @@
-
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Session, SupabaseClient } from '@supabase/supabase-js';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { Session, SupabaseClient, User } from '@supabase/supabase-js';
 import { getSupabase } from '@/lib/supabase-client';
 import { UserRole } from '@/lib/types';
+import { useRouter } from 'next/navigation';
 
 type SupabaseContextType = {
   supabase: SupabaseClient | null;
   session: Session | null;
+  user: User | null;
   userRole: UserRole;
   isLoading: boolean;
+  setRedirectTo: (shouldRedirect: boolean) => void;
 };
 
 const SupabaseContext = createContext<SupabaseContextType | undefined>(undefined);
+
+const Redirector = ({ user, role, shouldRedirect, setShouldRedirect }: { user: User | null, role: UserRole, shouldRedirect: boolean, setShouldRedirect: (v:boolean) => void }) => {
+    const router = useRouter();
+
+    useEffect(() => {
+        if (!shouldRedirect || !user || !role) return;
+
+        let path = '/';
+        if (role === 'admin') path = '/admin/dashboard';
+        else if (role === 'supplier') path = '/supplier/dashboard';
+        else if (role === 'buyer') path = '/buyer/dashboard';
+        
+        router.push(path);
+        setShouldRedirect(false); // Reset redirect trigger
+    }, [user, role, shouldRedirect, router, setShouldRedirect]);
+    
+    return null; // This component does not render anything
+}
 
 export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
   const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [userRole, setUserRole] = useState<UserRole>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [shouldRedirect, setShouldRedirect] = useState(false);
+
+  const fetchUserRole = useCallback(async (client: SupabaseClient, userId: string) => {
+    // Check admins table
+    const { data: admin } = await client.from('admins').select('id').eq('id', userId).single();
+    if (admin) {
+      setUserRole('admin');
+      return 'admin';
+    }
+    // Check suppliers table
+    const { data: supplier } = await client.from('suppliers').select('id').eq('id', userId).single();
+    if (supplier) {
+        setUserRole('supplier');
+        return 'supplier';
+    }
+    // Check buyers table
+    const { data: buyer } = await client.from('buyers').select('id').eq('id', userId).single();
+    if (buyer) {
+        setUserRole('buyer');
+        return 'buyer';
+    }
+
+    setUserRole(null);
+    return null;
+  }, []);
 
   useEffect(() => {
-    // Initialize Supabase client on the client-side
     const supabaseClient = getSupabase();
     setSupabase(supabaseClient);
 
-    const getSession = async () => {
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      setSession(session);
-      if (session) {
-        await fetchUserRole(supabaseClient, session.user.id);
+    const getInitialSession = async () => {
+      const { data: { session: initialSession } } = await supabaseClient.auth.getSession();
+      setSession(initialSession);
+      if (initialSession) {
+        await fetchUserRole(supabaseClient, initialSession.user.id);
       }
       setIsLoading(false);
     };
 
-    getSession();
+    getInitialSession();
 
     const { data: authListener } = supabaseClient.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        if (session) {
-          await fetchUserRole(supabaseClient, session.user.id);
+      async (event, newSession) => {
+        setIsLoading(true);
+        setSession(newSession);
+        if (newSession) {
+          await fetchUserRole(supabaseClient, newSession.user.id);
         } else {
           setUserRole(null);
         }
@@ -52,57 +97,20 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       authListener?.subscription.unsubscribe();
     };
-  }, []);
-
-  const fetchUserRole = async (client: SupabaseClient, userId: string) => {
-    // Check admins table
-    const { data: admin, error: adminError } = await client
-      .from('admins')
-      .select('user_id')
-      .eq('user_id', userId)
-      .single();
-
-    if (admin) {
-      setUserRole('admin');
-      return;
-    }
-
-    // Check suppliers table
-    const { data: supplier, error: supplierError } = await client
-      .from('suppliers')
-      .select('user_id')
-      .eq('user_id', userId)
-      .single();
-    
-    if (supplier) {
-        setUserRole('supplier');
-        return;
-    }
-
-    // Check buyers table
-    const { data: buyer, error: buyerError } = await client
-        .from('buyers')
-        .select('user_id')
-        .eq('user_id', userId)
-        .single();
-    
-    if (buyer) {
-        setUserRole('buyer');
-        return;
-    }
-
-    setUserRole(null);
-  };
+  }, [fetchUserRole]);
 
   const value = {
     supabase,
     session,
+    user: session?.user ?? null,
     userRole,
     isLoading,
+    setRedirectTo: setShouldRedirect,
   };
 
   return (
     <SupabaseContext.Provider value={value}>
+      <Redirector user={value.user} role={userRole} shouldRedirect={shouldRedirect} setShouldRedirect={setShouldRedirect} />
       {children}
     </SupabaseContext.Provider>
   );
@@ -113,11 +121,5 @@ export const useSupabase = () => {
   if (context === undefined) {
     throw new Error('useSupabase must be used within a SupabaseProvider');
   }
-  if (context.supabase === null) {
-      // This can happen briefly on the first render, so we'll handle it gracefully
-      // in components, but for hooks that absolutely need it, we could throw.
-      // For now, we'll allow it to be null initially.
-  }
-  // We cast to remove null, as components will be structured to handle the loading state.
-  return context as SupabaseContextType & { supabase: SupabaseClient };
+  return context;
 };

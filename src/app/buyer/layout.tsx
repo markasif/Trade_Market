@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Bell, HelpCircle, Package, Receipt, ShoppingBag, LogOut } from "lucide-react";
 import { Logo3 } from "@/components/icons";
-import { useSupabase } from "@/components/supabase-provider";
+import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
 
 const navLinks = [
@@ -16,25 +16,18 @@ const navLinks = [
 ];
 
 function BuyerHeader() {
-    const { supabase, session, isLoading } = useSupabase();
+    const { user, handleLogout, isLoading } = useAuth();
     const router = useRouter();
-
-    const handleLogout = async () => {
-        if (!supabase) return;
-        await supabase.auth.signOut();
-        router.push('/');
-    };
 
     if (isLoading) {
         return <header className="flex w-full items-center justify-center border-b bg-card h-16" />;
     }
 
-    if (!session) {
+    if (!user) {
         router.push('/auth/login');
         return null;
     }
-
-    const user = session.user;
+    
     const avatarUrl = user?.user_metadata?.avatar_url;
     const userEmail = user?.email || '';
 
