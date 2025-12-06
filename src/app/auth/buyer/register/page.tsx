@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm, SubmitHandler, Controller } from "react-hook-form";
+import { useForm, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, CloudUpload } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/lib/supabase-client";
 import { useRouter } from "next/navigation";
@@ -30,7 +30,7 @@ export default function BuyerRegistrationPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { register, handleSubmit, control, formState: { errors } } = useForm<FormValues>({
+  const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
       resolver: zodResolver(formSchema),
       mode: "onTouched"
   });
@@ -38,6 +38,8 @@ export default function BuyerRegistrationPage() {
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
       setIsSubmitting(true);
       try {
+        // This is the correct flow. We pass the profile data in the `options.data` object.
+        // A database trigger will then create the corresponding profile in the public.buyers table.
         const { data: authData, error: authError } = await supabase.auth.signUp({
             email: data.email,
             password: data.password,
@@ -48,9 +50,6 @@ export default function BuyerRegistrationPage() {
                 phone: data.phone,
                 shipping_address: data.shippingAddress,
                 gst_number: data.gstNumber,
-                account_status: 'pending',
-                // We're omitting file URLs for now, as we can't upload before the user ID exists.
-                // A better flow would be to upload after signup on a separate profile completion step.
               }
             }
         });
@@ -59,8 +58,8 @@ export default function BuyerRegistrationPage() {
         if (!authData.user) throw new Error("Registration failed, user not created.");
         
         toast({
-            title: "Registration Submitted",
-            description: "Your account is under review. Please check your email to verify your account.",
+            title: "Registration Submitted!",
+            description: "Please check your email to verify your account.",
         });
         router.push('/auth/login');
 
@@ -68,7 +67,7 @@ export default function BuyerRegistrationPage() {
         toast({
             variant: "destructive",
             title: "Registration Failed",
-            description: error.message || "An unexpected error occurred.",
+            description: error.message || "An unexpected error occurred. Please try again.",
         });
       } finally {
         setIsSubmitting(false);
@@ -127,11 +126,6 @@ export default function BuyerRegistrationPage() {
                 {errors.shippingAddress && <p className="text-sm text-destructive">{errors.shippingAddress.message}</p>}
               </div>
             </div>
-            
-            {/* Note: Document uploads on signup are complex without a user ID.
-                This part is simplified for the fix. A robust implementation
-                would handle uploads after the initial signup. */}
-
           </CardContent>
           <CardFooter className="flex justify-end gap-3 pt-6">
             <Button type="submit" disabled={isSubmitting}>

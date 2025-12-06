@@ -94,50 +94,7 @@ export default function SupplierRegistrationPage() {
     const onSubmit: SubmitHandler<FormValues> = async (data) => {
         setIsSubmitting(true);
         try {
-            // 1. Create user with Supabase Auth
-            const { data: authData, error: authError } = await supabase.auth.signUp({
-                email: data.email,
-                password: data.password,
-            });
-
-            if (authError) throw authError;
-            if (!authData.user) throw new Error("Registration failed, user not created.");
-            
-            const user = authData.user;
-            const userId = user.id;
-
-            // 2. Insert into users table FIRST
-            const { error: userInsertError } = await supabase.from('users').insert({
-                id: userId,
-                user_type: 'supplier',
-                email: data.email,
-            });
-
-            if (userInsertError) {
-              // Attempt to clean up the created auth user if profile insertion fails
-              await supabase.auth.signOut();
-              const { error: deleteError } = await supabase.auth.deleteUser(user.id);
-              console.error("Failed to delete orphaned auth user:", deleteError);
-              throw userInsertError;
-            }
-
-            // 3. Upload files to Supabase Storage
-            const bizLicensePath = `${userId}/business_license_${data.businessLicense.name}`;
-            const { error: licenseUploadError } = await supabase.storage.from('kyc-documents').upload(bizLicensePath, data.businessLicense);
-            if (licenseUploadError) throw licenseUploadError;
-            const { data: { publicUrl: businessLicenseUrl } } = supabase.storage.from('kyc-documents').getPublicUrl(bizLicensePath);
-            
-            const taxIdPath = `${userId}/tax_id_${data.taxIdDocument.name}`;
-            const { error: taxIdUploadError } = await supabase.storage.from('kyc-documents').upload(taxIdPath, data.taxIdDocument);
-            if (taxIdUploadError) throw taxIdUploadError;
-            const { data: { publicUrl: taxIdDocumentUrl } } = supabase.storage.from('kyc-documents').getPublicUrl(taxIdPath);
-            
-            const bankProofPath = `${userId}/bank_proof_${data.bankAccountProof.name}`;
-            const { error: bankProofUploadError } = await supabase.storage.from('kyc-documents').upload(bankProofPath, data.bankAccountProof);
-            if (bankProofUploadError) throw bankProofUploadError;
-            const { data: { publicUrl: bankAccountProofUrl } } = supabase.storage.from('kyc-documents').getPublicUrl(bankProofPath);
-
-            // 4. AI Vetting
+            // 1. AI Vetting first
             const businessLicenseDataUri = await fileToDataUri(data.businessLicense);
             const taxIdDocumentDataUri = await fileToDataUri(data.taxIdDocument);
             const vettingResult = await aiSupplierVetting({
@@ -146,29 +103,64 @@ export default function SupplierRegistrationPage() {
                 taxIdDocumentDataUri,
             });
 
-            // 5. Save supplier data to Supabase table
             const accountStatus = vettingResult.isApproved ? 'active' : 'pending';
 
-            const { error: dbError } = await supabase.from('suppliers').insert({
-                id: userId,
-                company_name: data.companyName,
-                business_email: data.email,
-                contact_number: data.phone,
-                business_address: data.address,
-                gst_number: data.gstNumber,
-                business_license_url: businessLicenseUrl,
-                tax_id_document_url: taxIdDocumentUrl,
-                bank_account_proof_url: bankAccountProofUrl,
-                account_status: accountStatus,
+            // 2. Create user with Supabase Auth, passing metadata for the trigger
+            const { data: authData, error: authError } = await supabase.auth.signUp({
+                email: data.email,
+                password: data.password,
+                options: {
+                    data: {
+                        user_type: 'supplier',
+                        company_name: data.companyName,
+                        contact_number: data.phone,
+                        business_address: data.address,
+                        gst_number: data.gstNumber,
+                        account_status: accountStatus, // Pass status from AI vet
+                    }
+                }
             });
 
-            if (dbError) throw dbError;
+            if (authError) throw authError;
+            if (!authData.user) throw new Error("Registration failed, user not created.");
+            
+            const userId = authData.user.id;
+
+            // 3. Upload files to Supabase Storage
+            const uploadFile = async (file: File, bucket: string, path: string) => {
+                const { error } = await supabase.storage.from(bucket).upload(path, file);
+                if (error) throw error;
+                const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(path);
+                return publicUrl;
+            };
+
+            const bizLicensePath = `${userId}/business_license_${data.businessLicense.name}`;
+            const businessLicenseUrl = await uploadFile(data.businessLicense, 'kyc-documents', bizLicensePath);
+            
+            const taxIdPath = `${userId}/tax_id_${data.taxIdDocument.name}`;
+            const taxIdDocumentUrl = await uploadFile(data.taxIdDocument, 'kyc-documents', taxIdPath);
+            
+            const bankProofPath = `${userId}/bank_proof_${data.bankAccountProof.name}`;
+            const bankAccountProofUrl = await uploadFile(data.bankAccountProof, 'kyc-documents', bankProofPath);
+
+            // 4. Update the newly created supplier profile with the file URLs
+            const { error: updateError } = await supabase
+                .from('suppliers')
+                .update({
+                    business_license_url: businessLicenseUrl,
+                    tax_id_document_url: taxIdDocumentUrl,
+                    bank_account_proof_url: bankAccountProofUrl,
+                })
+                .eq('id', userId);
+
+            if (updateError) throw updateError;
+
 
             toast({
                 title: "Registration Submitted!",
                 description: vettingResult.isApproved 
-                    ? "Your account has been instantly approved! You can now log in." 
-                    : "Your application is under review. We'll notify you shortly."
+                    ? "Your account has been instantly approved! Please check your email to verify and then log in." 
+                    : "Your application is under review. We'll notify you shortly after you verify your email."
             });
             router.push('/auth/login');
 
