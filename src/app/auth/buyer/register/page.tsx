@@ -48,35 +48,30 @@ export default function BuyerRegistrationPage() {
         return;
       }
       try {
-        // Step 1: Create the user in Supabase Auth, passing metadata
+        // Step 1: Create the user in Supabase Auth
         const { data: authData, error: authError } = await supabase.auth.signUp({
             email: data.email,
             password: data.password,
-            options: {
-              data: {
-                user_type: 'buyer',
-                business_name: data.businessName,
-                gst_number: data.gstNumber,
-              }
-            }
         });
 
         if (authError) throw authError;
         if (!authData.user) throw new Error("Registration failed, user not created.");
         
-        // Step 2: Update the newly created buyer's profile with the rest of the form data
-        const { error: profileError } = await supabase.from('buyers').update({
+        // Step 2: Insert the profile into the public.buyers table
+        const { error: profileError } = await supabase.from('buyers').insert({
+          id: authData.user.id,
           business_name: data.businessName,
           phone: data.phone,
           shipping_address: data.shippingAddress,
           gst_number: data.gstNumber,
-        }).eq('id', authData.user.id);
+          account_status: 'pending', // Default status
+        });
 
         if (profileError) throw profileError;
 
         toast({
             title: "Registration Submitted!",
-            description: "Please check your email to verify your account.",
+            description: "Please check your email to verify your account, then log in.",
         });
         
         // Navigate to login page on success

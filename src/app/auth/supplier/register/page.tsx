@@ -12,17 +12,10 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CloudUpload, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
-import { aiSupplierVetting } from "@/ai/flows/ai-supplier-vetting";
-import { supabase } from "@/lib/supabase-client";
+import { useSupabase } from "@/components/supabase-provider";
 import { useRouter } from "next/navigation";
 
-const fileToDataUri = (file: File) => new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-});
-
+const fileSchema = z.instanceof(File, { message: "File is required." }).refine(file => file.size > 0, "File cannot be empty.");
 
 const formSchema = z.object({
     companyName: z.string().min(1, "Company name is required"),
@@ -31,9 +24,9 @@ const formSchema = z.object({
     phone: z.string().min(1, "Contact number is required"),
     gstNumber: z.string().min(1, "GST number is required"),
     address: z.string().min(1, "Business address is required"),
-    businessLicense: z.instanceof(File).refine(file => file.size > 0, "Business license is required."),
-    taxIdDocument: z.instanceof(File).refine(file => file.size > 0, "Tax ID document is required."),
-    bankAccountProof: z.instanceof(File).refine(file => file.size > 0, "Bank account proof is required."),
+    businessLicense: fileSchema,
+    taxIdDocument: fileSchema,
+    bankAccountProof: fileSchema,
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -75,6 +68,7 @@ function FileUploadZone({ field, label, error }: { field: any, label: string, er
 
 export default function SupplierRegistrationPage() {
     const { toast } = useToast();
+    const { supabase } = useSupabase();
     const router = useRouter();
     const [currentTab, setCurrentTab] = useState("company-info");
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -93,19 +87,15 @@ export default function SupplierRegistrationPage() {
     
     const onSubmit: SubmitHandler<FormValues> = async (data) => {
         setIsSubmitting(true);
+
+        if (!supabase) {
+            toast({ variant: "destructive", title: "Registration Failed", description: "Supabase client not available." });
+            setIsSubmitting(false);
+            return;
+        }
+
         try {
-            // 1. AI Vetting first
-            const businessLicenseDataUri = await fileToDataUri(data.businessLicense);
-            const taxIdDocumentDataUri = await fileToDataUri(data.taxIdDocument);
-            const vettingResult = await aiSupplierVetting({
-                businessName: data.companyName,
-                businessLicenseDataUri,
-                taxIdDocumentDataUri,
-            });
-
-            const accountStatus = vettingResult.isApproved ? 'active' : 'pending';
-
-            // 2. Create user with Supabase Auth
+            // 1. Create user with Supabase Auth
             const { data: authData, error: authError } = await supabase.auth.signUp({
                 email: data.email,
                 password: data.password,
@@ -116,20 +106,7 @@ export default function SupplierRegistrationPage() {
             
             const userId = authData.user.id;
             
-            // 3. Insert profile into public.suppliers
-            const { error: profileError } = await supabase.from('suppliers').insert({
-              id: userId,
-              company_name: data.companyName,
-              contact_number: data.phone,
-              business_address: data.address,
-              gst_number: data.gstNumber,
-              account_status: accountStatus,
-            });
-
-            if (profileError) throw profileError;
-
-
-            // 4. Upload files to Supabase Storage
+            // 2. Upload files to Supabase Storage
             const uploadFile = async (file: File, bucket: string, path: string) => {
                 const { error } = await supabase.storage.from(bucket).upload(path, file);
                 if (error) throw error;
@@ -146,24 +123,24 @@ export default function SupplierRegistrationPage() {
             const bankProofPath = `${userId}/bank_proof_${data.bankAccountProof.name}`;
             const bankAccountProofUrl = await uploadFile(data.bankAccountProof, 'kyc-documents', bankProofPath);
 
-            // 5. Update the supplier profile with the file URLs
-            const { error: updateError } = await supabase
-                .from('suppliers')
-                .update({
-                    business_license_url: businessLicenseUrl,
-                    tax_id_document_url: taxIdDocumentUrl,
-                    bank_account_proof_url: bankAccountProofUrl,
-                })
-                .eq('id', userId);
+            // 3. Insert profile into public.suppliers with file URLs
+            const { error: profileError } = await supabase.from('suppliers').insert({
+              id: userId,
+              company_name: data.companyName,
+              contact_number: data.phone,
+              business_address: data.address,
+              gst_number: data.gstNumber,
+              business_license_url: businessLicenseUrl,
+              tax_id_document_url: taxIdDocumentUrl,
+              bank_account_proof_url: bankAccountProofUrl,
+              account_status: 'pending', // No AI, default to pending
+            });
 
-            if (updateError) throw updateError;
-
+            if (profileError) throw profileError;
 
             toast({
                 title: "Registration Submitted!",
-                description: vettingResult.isApproved 
-                    ? "Your account has been instantly approved! Please check your email to verify and then log in." 
-                    : "Your application is under review. We'll notify you shortly after you verify your email."
+                description: "Your application is under review. We'll notify you shortly after you verify your email."
             });
             router.push('/auth/login');
 
@@ -273,7 +250,7 @@ export default function SupplierRegistrationPage() {
                 ) : (
                     <Button type="submit" disabled={isSubmitting}>
                         {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Submit for AI Vetting
+                        Submit for Review
                     </Button>
                 )}
             </CardFooter>
