@@ -75,6 +75,8 @@ export default function BuyerRegistrationPage() {
         description: "Please check your email to verify your account, then you can log in.",
       });
       
+      // IMPORTANT: Set loading to false BEFORE navigating.
+      setIsSubmitting(false);
       // Navigate to login page on success
       router.push('/auth/login');
 
@@ -85,7 +87,6 @@ export default function BuyerRegistrationPage() {
         title: "Registration Failed",
         description: error.message || "An unexpected error occurred. Please try again.",
       });
-    } finally {
       setIsSubmitting(false);
     }
   };

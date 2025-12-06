@@ -133,7 +133,7 @@ export default function SupplierRegistrationPage() {
               business_license_url: businessLicenseUrl,
               tax_id_document_url: taxIdDocumentUrl,
               bank_account_proof_url: bankAccountProofUrl,
-              account_status: 'pending', // No AI, default to pending
+              account_status: 'pending',
             });
 
             if (profileError) throw profileError;
@@ -142,15 +142,17 @@ export default function SupplierRegistrationPage() {
                 title: "Registration Submitted!",
                 description: "Your application is under review. We'll notify you shortly after you verify your email."
             });
+            
+            // IMPORTANT: Set loading to false BEFORE navigating.
+            setIsSubmitting(false);
             router.push('/auth/login');
 
         } catch (error: any) {
-            toast({
+             toast({
                 variant: "destructive",
                 title: "Registration Failed",
                 description: error.message || "An unexpected error occurred. Please try again.",
             });
-        } finally {
             setIsSubmitting(false);
         }
     };
