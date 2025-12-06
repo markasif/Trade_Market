@@ -92,7 +92,6 @@ CREATE TABLE IF NOT EXISTS public.order_items (
 -- --------------------------------------------------------------------------------
 
 -- This function will be triggered after a new user signs up.
--- IMPORTANT: Changed to SECURITY INVOKER to run as the user who triggered it (the new user).
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -112,7 +111,7 @@ BEGIN
   
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY INVOKER; -- This is the crucial change
+$$ LANGUAGE plpgsql SECURITY INVOKER;
 
 -- Create the trigger that fires after a new user is inserted into auth.users
 CREATE TRIGGER on_auth_user_created
@@ -140,18 +139,18 @@ $$ LANGUAGE sql SECURITY DEFINER;
 
 -- POLICIES
 
--- Buyers policies: Allow insert for any authenticated user (for the trigger) and then restrict management to owner/admin.
-DROP POLICY IF EXISTS "Allow insert for authenticated users" ON public.buyers;
-CREATE POLICY "Allow insert for authenticated users" ON public.buyers FOR INSERT TO authenticated WITH CHECK (true);
-DROP POLICY IF EXISTS "Buyers can manage their own profile" ON public.buyers;
-CREATE POLICY "Buyers can manage their own profile" ON public.buyers FOR ALL USING (auth.uid() = id OR is_admin());
+-- Buyers policies:
+DROP POLICY IF EXISTS "Allow individual insert access" ON public.buyers;
+CREATE POLICY "Allow individual insert access" ON public.buyers FOR INSERT WITH CHECK (auth.uid() = id);
+DROP POLICY IF EXISTS "Allow individual read, update, delete access" ON public.buyers;
+CREATE POLICY "Allow individual read, update, delete access" ON public.buyers FOR ALL USING (auth.uid() = id OR is_admin());
 
+-- Suppliers policies:
+DROP POLICY IF EXISTS "Allow individual insert access" ON public.suppliers;
+CREATE POLICY "Allow individual insert access" ON public.suppliers FOR INSERT WITH CHECK (auth.uid() = id);
+DROP POLICY IF EXISTS "Allow individual read, update, delete access" ON public.suppliers;
+CREATE POLICY "Allow individual read, update, delete access" ON public.suppliers FOR ALL USING (auth.uid() = id OR is_admin());
 
--- Suppliers policies: Allow insert for any authenticated user (for the trigger) and then restrict management to owner/admin.
-DROP POLICY IF EXISTS "Allow insert for authenticated users" ON public.suppliers;
-CREATE POLICY "Allow insert for authenticated users" ON public.suppliers FOR INSERT TO authenticated WITH CHECK (true);
-DROP POLICY IF EXISTS "Suppliers can manage their own profile" ON public.suppliers;
-CREATE POLICY "Suppliers can manage their own profile" ON public.suppliers FOR ALL USING (auth.uid() = id OR is_admin());
 
 -- Admins policy: Only other admins can manage the admins table.
 DROP POLICY IF EXISTS "Admins can manage admins" ON public.admins;
