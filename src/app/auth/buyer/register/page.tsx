@@ -77,6 +77,13 @@ export default function BuyerRegistrationPage() {
         const { data: authData, error: authError } = await supabase.auth.signUp({
             email: data.email,
             password: data.password,
+            options: {
+              data: {
+                user_type: 'buyer',
+                email: data.email,
+                first_name: data.businessName.split(' ')[0],
+              }
+            }
         });
 
         if (authError) throw authError;
@@ -91,16 +98,16 @@ export default function BuyerRegistrationPage() {
             user_type: 'buyer',
             email: data.email,
         });
-
+        
         if (userInsertError) {
+          console.error("Error inserting into users table:", userInsertError);
           // Attempt to clean up the created auth user if profile insertion fails
           // This is not transactional, but it's a good practice
-          await supabase.auth.signOut(); // Sign out the partially created user
-          const { error: deleteError } = await supabase.auth.deleteUser(user.id);
-          console.error("Failed to delete orphaned auth user:", deleteError);
+          await supabase.auth.signOut(); 
+          // Note: Supabase admin client needed to delete user, which we don't have on client-side.
+          // The user will exist in auth but not in the public.users table.
           throw userInsertError;
         }
-
 
         const gstCertPath = `${userId}/gst_certificate_${data.gstCertificate.name}`;
         const { error: gstUploadError } = await supabase.storage.from('kyc-documents').upload(gstCertPath, data.gstCertificate);
@@ -119,7 +126,7 @@ export default function BuyerRegistrationPage() {
             phone: data.phone,
             shipping_address: data.shippingAddress,
             gst_number: data.gstNumber,
-            account_status: 'pending', // Or 'active' based on AI vetting result if implemented
+            account_status: 'pending', // Buyer accounts start as pending for review
             gst_certificate_url: gstCertificateUrl,
             business_registration_url: businessRegistrationUrl
         });
