@@ -37,55 +37,57 @@ export default function BuyerRegistrationPage() {
   });
 
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
-      setIsSubmitting(true);
-      if (!supabase) {
-        toast({
-          variant: 'destructive',
-          title: 'Registration Failed',
-          description: 'Application is not ready. Please try again in a moment.',
-        });
-        setIsSubmitting(false);
-        return;
-      }
-      try {
-        // Step 1: Create the user in Supabase Auth
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-            email: data.email,
-            password: data.password,
-        });
+    setIsSubmitting(true);
+    if (!supabase) {
+      toast({
+        variant: 'destructive',
+        title: 'Registration Failed',
+        description: 'Application is not ready. Please try again in a moment.',
+      });
+      setIsSubmitting(false);
+      return;
+    }
+    
+    try {
+      // Step 1: Create the user in Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+      });
 
-        if (authError) throw authError;
-        if (!authData.user) throw new Error("Registration failed, user not created.");
-        
-        // Step 2: Insert the profile into the public.buyers table
-        const { error: profileError } = await supabase.from('buyers').insert({
-          id: authData.user.id,
-          business_name: data.businessName,
-          phone: data.phone,
-          shipping_address: data.shippingAddress,
-          gst_number: data.gstNumber,
-          account_status: 'pending', // Default status
-        });
+      if (authError) throw authError;
+      if (!authData.user) throw new Error("Registration failed, user not created.");
+      
+      // Step 2: Insert the profile into the public.buyers table
+      const { error: profileError } = await supabase.from('buyers').insert({
+        id: authData.user.id,
+        business_name: data.businessName,
+        phone: data.phone,
+        shipping_address: data.shippingAddress,
+        gst_number: data.gstNumber,
+        account_status: 'pending', // Default status for manual review
+      });
 
-        if (profileError) throw profileError;
+      if (profileError) throw profileError;
 
-        toast({
-            title: "Registration Submitted!",
-            description: "Please check your email to verify your account, then log in.",
-        });
-        
-        // Navigate to login page on success
-        router.push('/auth/login');
+      toast({
+        title: "Registration Submitted!",
+        description: "Please check your email to verify your account, then you can log in.",
+      });
+      
+      // Navigate to login page on success
+      router.push('/auth/login');
 
-      } catch(error: any) {
-        toast({
-            variant: "destructive",
-            title: "Registration Failed",
-            description: error.message || "An unexpected error occurred. Please try again.",
-        });
-      } finally {
-        setIsSubmitting(false);
-      }
+    } catch (error: any) {
+      console.error('Registration Error:', error);
+      toast({
+        variant: "destructive",
+        title: "Registration Failed",
+        description: error.message || "An unexpected error occurred. Please try again.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
