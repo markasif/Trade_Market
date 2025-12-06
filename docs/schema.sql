@@ -1,6 +1,8 @@
--- Drop all tables, functions, and types if they exist for a clean slate
+-- Drop the trigger and function in the correct order to avoid dependency errors.
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 DROP FUNCTION IF EXISTS public.handle_new_user();
+
+-- Drop all tables for a clean recreation. Use CASCADE to remove dependent objects.
 DROP TABLE IF EXISTS public.order_items, public.orders, public.products, public.categories, public.admins, public.buyers, public.suppliers CASCADE;
 
 -- --------------------------------------------------------------------------------
@@ -90,6 +92,7 @@ CREATE TABLE IF NOT EXISTS public.order_items (
 -- --------------------------------------------------------------------------------
 
 -- This function will be triggered after a new user signs up.
+-- IMPORTANT: Changed to SECURITY INVOKER to run as the user who triggered it (the new user).
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -109,7 +112,7 @@ BEGIN
   
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY INVOKER; -- This is the crucial change
 
 -- Create the trigger that fires after a new user is inserted into auth.users
 CREATE TRIGGER on_auth_user_created
@@ -136,47 +139,52 @@ RETURNS BOOLEAN AS $$
 $$ LANGUAGE sql SECURITY DEFINER;
 
 -- POLICIES
-DROP POLICY IF EXISTS "Allow all for admins" ON public.buyers;
-CREATE POLICY "Allow all for admins" ON public.buyers FOR ALL USING (is_admin());
+
+-- Buyers policies: Allow insert for any authenticated user (for the trigger) and then restrict management to owner/admin.
+DROP POLICY IF EXISTS "Allow insert for authenticated users" ON public.buyers;
+CREATE POLICY "Allow insert for authenticated users" ON public.buyers FOR INSERT TO authenticated WITH CHECK (true);
 DROP POLICY IF EXISTS "Buyers can manage their own profile" ON public.buyers;
-CREATE POLICY "Buyers can manage their own profile" ON public.buyers FOR ALL USING (auth.uid() = id);
+CREATE POLICY "Buyers can manage their own profile" ON public.buyers FOR ALL USING (auth.uid() = id OR is_admin());
 
-DROP POLICY IF EXISTS "Allow all for admins" ON public.suppliers;
-CREATE POLICY "Allow all for admins" ON public.suppliers FOR ALL USING (is_admin());
+
+-- Suppliers policies: Allow insert for any authenticated user (for the trigger) and then restrict management to owner/admin.
+DROP POLICY IF EXISTS "Allow insert for authenticated users" ON public.suppliers;
+CREATE POLICY "Allow insert for authenticated users" ON public.suppliers FOR INSERT TO authenticated WITH CHECK (true);
 DROP POLICY IF EXISTS "Suppliers can manage their own profile" ON public.suppliers;
-CREATE POLICY "Suppliers can manage their own profile" ON public.suppliers FOR ALL USING (auth.uid() = id);
+CREATE POLICY "Suppliers can manage their own profile" ON public.suppliers FOR ALL USING (auth.uid() = id OR is_admin());
 
-DROP POLICY IF EXISTS "Allow read access to everyone" ON public.admins;
-CREATE POLICY "Allow read access to everyone" ON public.admins FOR SELECT USING (true);
+-- Admins policy: Only other admins can manage the admins table.
+DROP POLICY IF EXISTS "Admins can manage admins" ON public.admins;
+CREATE POLICY "Admins can manage admins" ON public.admins FOR ALL USING (is_admin());
 
+-- Categories policies: Public read, admin write.
 DROP POLICY IF EXISTS "Allow public read access" ON public.categories;
 CREATE POLICY "Allow public read access" ON public.categories FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Allow admin write access" ON public.categories;
 CREATE POLICY "Allow admin write access" ON public.categories FOR ALL USING (is_admin());
 
+-- Products policies: Public read, owner/admin write.
 DROP POLICY IF EXISTS "Allow public read access" ON public.products;
 CREATE POLICY "Allow public read access" ON public.products FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Allow suppliers to manage their products" ON public.products;
 CREATE POLICY "Allow suppliers to manage their products" ON public.products FOR ALL USING (auth.uid() = supplier_id OR is_admin());
 
-DROP POLICY IF EXISTS "Allow all for admins" ON public.orders;
-CREATE POLICY "Allow all for admins" ON public.orders FOR ALL USING (is_admin());
-DROP POLICY IF EXISTS "Buyers can manage their own orders" ON public.orders;
-CREATE POLICY "Buyers can manage their own orders" ON public.orders FOR ALL USING (auth.uid() = buyer_id);
+-- Orders policies: Owner/admin can manage, supplier can view.
+DROP POLICY IF EXISTS "Users can manage their own orders" ON public.orders;
+CREATE POLICY "Users can manage their own orders" ON public.orders FOR ALL USING (auth.uid() = buyer_id OR is_admin());
 DROP POLICY IF EXISTS "Suppliers can view their orders" ON public.orders;
-CREATE POLICY "Suppliers can view their orders" ON public.orders FOR SELECT USING (EXISTS (
+CREATE POLICY "Suppliers can view their orders" ON public.orders FOR SELECT USING (is_admin() OR EXISTS (
     SELECT 1 FROM public.order_items oi
     JOIN public.products p ON oi.product_id = p.id
     WHERE oi.order_id = public.orders.id AND p.supplier_id = auth.uid()
 ));
 
-DROP POLICY IF EXISTS "Allow all for admins" ON public.order_items;
-CREATE POLICY "Allow all for admins" ON public.order_items FOR ALL USING (is_admin());
-DROP POLICY IF EXISTS "Buyers can manage their order items" ON public.order_items;
-CREATE POLICY "Buyers can manage their order items" ON public.order_items FOR ALL USING (EXISTS (
+-- Order Items policies: Owner/admin can manage, supplier can view.
+DROP POLICY IF EXISTS "Users can manage their own order_items" ON public.order_items;
+CREATE POLICY "Users can manage their own order_items" ON public.order_items FOR ALL USING (is_admin() OR EXISTS (
     SELECT 1 FROM public.orders o WHERE o.id = order_id AND o.buyer_id = auth.uid()
 ));
-DROP POLICY IF EXISTS "Suppliers can view their order items" ON public.order_items;
-CREATE POLICY "Suppliers can view their order items" ON public.order_items FOR SELECT USING (EXISTS (
+DROP POLICY IF EXISTS "Suppliers can view their order_items" ON public.order_items;
+CREATE POLICY "Suppliers can view their order_items" ON public.order_items FOR SELECT USING (is_admin() OR EXISTS (
     SELECT 1 FROM public.products p WHERE p.id = product_id AND p.supplier_id = auth.uid()
 ));
