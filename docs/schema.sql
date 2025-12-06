@@ -88,19 +88,21 @@ CREATE TABLE IF NOT EXISTS public.order_items (
 
 
 -- --------------------------------------------------------------------------------
--- 3. Automatic Profile Creation (Triggers and Functions)
+-- 3. Automatic Profile Creation (Triggers and Functions) - DEFINITIVE FIX
 -- --------------------------------------------------------------------------------
 
 -- This function will be triggered after a new user signs up.
+-- It securely bypasses RLS ONLY for the duration of the function execution.
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 DECLARE
   user_type TEXT;
 BEGIN
-  -- Get user_type from metadata, default to 'buyer' if not present
+  -- Set the role to 'postgres' to bypass RLS for this trusted operation.
+  set_config('role', 'postgres', true);
+
   user_type := NEW.raw_user_meta_data ->> 'user_type';
 
-  -- Create a corresponding profile in the appropriate table
   IF user_type = 'supplier' THEN
     INSERT INTO public.suppliers (id, company_name, gst_number, account_status)
     VALUES (NEW.id, NEW.raw_user_meta_data ->> 'company_name', NEW.raw_user_meta_data ->> 'gst_number', NEW.raw_user_meta_data ->> 'account_status');
@@ -108,10 +110,13 @@ BEGIN
     INSERT INTO public.buyers (id, business_name, gst_number, account_status)
     VALUES (NEW.id, NEW.raw_user_meta_data ->> 'business_name', NEW.raw_user_meta_data ->> 'gst_number', 'pending');
   END IF;
+
+  -- IMPORTANT: Reset the role back to the default.
+  set_config('role', '', true);
   
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY INVOKER;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Create the trigger that fires after a new user is inserted into auth.users
 CREATE TRIGGER on_auth_user_created
@@ -139,18 +144,19 @@ $$ LANGUAGE sql SECURITY DEFINER;
 
 -- POLICIES
 
--- Buyers policies:
-DROP POLICY IF EXISTS "Allow individual insert access" ON public.buyers;
-CREATE POLICY "Allow individual insert access" ON public.buyers FOR INSERT WITH CHECK (auth.uid() = id);
-DROP POLICY IF EXISTS "Allow individual read, update, delete access" ON public.buyers;
-CREATE POLICY "Allow individual read, update, delete access" ON public.buyers FOR ALL USING (auth.uid() = id OR is_admin());
+-- Buyers policies: Users can manage their own profile. Admins can do anything.
+DROP POLICY IF EXISTS "Users can manage their own buyer profile" ON public.buyers;
+CREATE POLICY "Users can manage their own buyer profile" ON public.buyers
+  FOR ALL
+  USING (auth.uid() = id OR is_admin())
+  WITH CHECK (auth.uid() = id OR is_admin());
 
--- Suppliers policies:
-DROP POLICY IF EXISTS "Allow individual insert access" ON public.suppliers;
-CREATE POLICY "Allow individual insert access" ON public.suppliers FOR INSERT WITH CHECK (auth.uid() = id);
-DROP POLICY IF EXISTS "Allow individual read, update, delete access" ON public.suppliers;
-CREATE POLICY "Allow individual read, update, delete access" ON public.suppliers FOR ALL USING (auth.uid() = id OR is_admin());
-
+-- Suppliers policies: Users can manage their own profile. Admins can do anything.
+DROP POLICY IF EXISTS "Users can manage their own supplier profile" ON public.suppliers;
+CREATE POLICY "Users can manage their own supplier profile" ON public.suppliers
+  FOR ALL
+  USING (auth.uid() = id OR is_admin())
+  WITH CHECK (auth.uid() = id OR is_admin());
 
 -- Admins policy: Only other admins can manage the admins table.
 DROP POLICY IF EXISTS "Admins can manage admins" ON public.admins;
