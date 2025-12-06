@@ -38,25 +38,27 @@ export default function BuyerRegistrationPage() {
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
       setIsSubmitting(true);
       try {
-        // This is the correct flow. We pass the profile data in the `options.data` object.
-        // A database trigger will then create the corresponding profile in the public.buyers table.
+        // Step 1: Create the user in Supabase Auth
         const { data: authData, error: authError } = await supabase.auth.signUp({
             email: data.email,
             password: data.password,
-            options: {
-              data: {
-                user_type: 'buyer',
-                business_name: data.businessName,
-                phone: data.phone,
-                shipping_address: data.shippingAddress,
-                gst_number: data.gstNumber,
-              }
-            }
         });
 
         if (authError) throw authError;
         if (!authData.user) throw new Error("Registration failed, user not created.");
         
+        // Step 2: Insert the profile into the public.buyers table
+        const { error: profileError } = await supabase.from('buyers').insert({
+          id: authData.user.id,
+          business_name: data.businessName,
+          phone: data.phone,
+          shipping_address: data.shippingAddress,
+          gst_number: data.gstNumber,
+          account_status: 'pending' // Default status
+        });
+
+        if (profileError) throw profileError;
+
         toast({
             title: "Registration Submitted!",
             description: "Please check your email to verify your account.",

@@ -105,28 +105,31 @@ export default function SupplierRegistrationPage() {
 
             const accountStatus = vettingResult.isApproved ? 'active' : 'pending';
 
-            // 2. Create user with Supabase Auth, passing metadata for the trigger
+            // 2. Create user with Supabase Auth
             const { data: authData, error: authError } = await supabase.auth.signUp({
                 email: data.email,
                 password: data.password,
-                options: {
-                    data: {
-                        user_type: 'supplier',
-                        company_name: data.companyName,
-                        contact_number: data.phone,
-                        business_address: data.address,
-                        gst_number: data.gstNumber,
-                        account_status: accountStatus, // Pass status from AI vet
-                    }
-                }
             });
 
             if (authError) throw authError;
             if (!authData.user) throw new Error("Registration failed, user not created.");
             
             const userId = authData.user.id;
+            
+            // 3. Insert profile into public.suppliers
+            const { error: profileError } = await supabase.from('suppliers').insert({
+              id: userId,
+              company_name: data.companyName,
+              contact_number: data.phone,
+              business_address: data.address,
+              gst_number: data.gstNumber,
+              account_status: accountStatus,
+            });
 
-            // 3. Upload files to Supabase Storage
+            if (profileError) throw profileError;
+
+
+            // 4. Upload files to Supabase Storage
             const uploadFile = async (file: File, bucket: string, path: string) => {
                 const { error } = await supabase.storage.from(bucket).upload(path, file);
                 if (error) throw error;
@@ -143,7 +146,7 @@ export default function SupplierRegistrationPage() {
             const bankProofPath = `${userId}/bank_proof_${data.bankAccountProof.name}`;
             const bankAccountProofUrl = await uploadFile(data.bankAccountProof, 'kyc-documents', bankProofPath);
 
-            // 4. Update the newly created supplier profile with the file URLs
+            // 5. Update the supplier profile with the file URLs
             const { error: updateError } = await supabase
                 .from('suppliers')
                 .update({

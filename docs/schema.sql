@@ -88,43 +88,7 @@ CREATE TABLE IF NOT EXISTS public.order_items (
 
 
 -- --------------------------------------------------------------------------------
--- 3. Automatic Profile Creation (Triggers and Functions) - DEFINITIVE FIX
--- --------------------------------------------------------------------------------
-
--- This function will be triggered after a new user signs up.
--- It securely bypasses RLS ONLY for the duration of the function execution.
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
-DECLARE
-  user_type TEXT;
-BEGIN
-  -- Set the role to 'postgres' to bypass RLS for this trusted operation.
-  set_config('role', 'postgres', true);
-
-  user_type := NEW.raw_user_meta_data ->> 'user_type';
-
-  IF user_type = 'supplier' THEN
-    INSERT INTO public.suppliers (id, company_name, gst_number, account_status)
-    VALUES (NEW.id, NEW.raw_user_meta_data ->> 'company_name', NEW.raw_user_meta_data ->> 'gst_number', NEW.raw_user_meta_data ->> 'account_status');
-  ELSE -- Default to creating a buyer profile
-    INSERT INTO public.buyers (id, business_name, gst_number, account_status)
-    VALUES (NEW.id, NEW.raw_user_meta_data ->> 'business_name', NEW.raw_user_meta_data ->> 'gst_number', 'pending');
-  END IF;
-
-  -- IMPORTANT: Reset the role back to the default.
-  set_config('role', '', true);
-  
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Create the trigger that fires after a new user is inserted into auth.users
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
-
--- --------------------------------------------------------------------------------
--- 4. Row-Level Security (RLS) Policies
+-- 3. Row-Level Security (RLS) Policies
 -- --------------------------------------------------------------------------------
 
 -- Enable RLS for all tables
@@ -144,37 +108,35 @@ $$ LANGUAGE sql SECURITY DEFINER;
 
 -- POLICIES
 
--- Buyers policies: Users can manage their own profile. Admins can do anything.
-DROP POLICY IF EXISTS "Users can manage their own buyer profile" ON public.buyers;
-CREATE POLICY "Users can manage their own buyer profile" ON public.buyers
-  FOR ALL
+-- Buyers: Authenticated users can create their own profile. Owners/admins can manage it.
+DROP POLICY IF EXISTS "Allow ALL for buyers for their own data" ON public.buyers;
+CREATE POLICY "Allow ALL for buyers for their own data" ON public.buyers FOR ALL
   USING (auth.uid() = id OR is_admin())
   WITH CHECK (auth.uid() = id OR is_admin());
 
--- Suppliers policies: Users can manage their own profile. Admins can do anything.
-DROP POLICY IF EXISTS "Users can manage their own supplier profile" ON public.suppliers;
-CREATE POLICY "Users can manage their own supplier profile" ON public.suppliers
-  FOR ALL
+-- Suppliers: Authenticated users can create their own profile. Owners/admins can manage it.
+DROP POLICY IF EXISTS "Allow ALL for suppliers for their own data" ON public.suppliers;
+CREATE POLICY "Allow ALL for suppliers for their own data" ON public.suppliers FOR ALL
   USING (auth.uid() = id OR is_admin())
   WITH CHECK (auth.uid() = id OR is_admin());
 
--- Admins policy: Only other admins can manage the admins table.
+-- Admins: Only other admins can manage the admins table.
 DROP POLICY IF EXISTS "Admins can manage admins" ON public.admins;
 CREATE POLICY "Admins can manage admins" ON public.admins FOR ALL USING (is_admin());
 
--- Categories policies: Public read, admin write.
+-- Categories: Public read, admin write.
 DROP POLICY IF EXISTS "Allow public read access" ON public.categories;
 CREATE POLICY "Allow public read access" ON public.categories FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Allow admin write access" ON public.categories;
 CREATE POLICY "Allow admin write access" ON public.categories FOR ALL USING (is_admin());
 
--- Products policies: Public read, owner/admin write.
+-- Products: Public read, owner/admin write.
 DROP POLICY IF EXISTS "Allow public read access" ON public.products;
 CREATE POLICY "Allow public read access" ON public.products FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Allow suppliers to manage their products" ON public.products;
 CREATE POLICY "Allow suppliers to manage their products" ON public.products FOR ALL USING (auth.uid() = supplier_id OR is_admin());
 
--- Orders policies: Owner/admin can manage, supplier can view.
+-- Orders: Owner/admin can manage, supplier can view.
 DROP POLICY IF EXISTS "Users can manage their own orders" ON public.orders;
 CREATE POLICY "Users can manage their own orders" ON public.orders FOR ALL USING (auth.uid() = buyer_id OR is_admin());
 DROP POLICY IF EXISTS "Suppliers can view their orders" ON public.orders;
@@ -184,7 +146,7 @@ CREATE POLICY "Suppliers can view their orders" ON public.orders FOR SELECT USIN
     WHERE oi.order_id = public.orders.id AND p.supplier_id = auth.uid()
 ));
 
--- Order Items policies: Owner/admin can manage, supplier can view.
+-- Order Items: Owner/admin can manage, supplier can view.
 DROP POLICY IF EXISTS "Users can manage their own order_items" ON public.order_items;
 CREATE POLICY "Users can manage their own order_items" ON public.order_items FOR ALL USING (is_admin() OR EXISTS (
     SELECT 1 FROM public.orders o WHERE o.id = order_id AND o.buyer_id = auth.uid()
