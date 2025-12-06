@@ -80,13 +80,13 @@ export default function ProductsPage() {
                       </Card>
                   ))}
                   {products?.map((product: WithId<Product>) => {
-                      const firstTierPrice = product.pricingTiers?.length > 0 ? product.pricingTiers[0].price : 0;
+                      const firstTierPrice = product.pricing_tiers?.length > 0 ? product.pricing_tiers[0].price : 0;
                       return (
                           <Card key={product.id} className="overflow-hidden group">
                               <CardHeader className="p-0">
                                   <Link href={`/products/${product.id}`}>
                                       <Image 
-                                          src={product.imageUrls?.[0] || "/placeholder.svg"} 
+                                          src={product.image_urls?.[0] || "/placeholder.svg"} 
                                           alt={product.name}
                                           width={400}
                                           height={300}

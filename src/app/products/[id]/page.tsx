@@ -7,14 +7,14 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
-import { Product } from "@/lib/types";
+import { Product, WithId } from "@/lib/types";
 import { useState, useEffect } from "react";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { useSupabase } from "@/components/supabase-provider";
 
 export default function ProductDetailPage({ params }: { params: { id: string } }) {
     const { supabase } = useSupabase();
-    const [product, setProduct] = useState<Product | null>(null);
+    const [product, setProduct] = useState<WithId<Product> | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
@@ -32,9 +32,9 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                 console.error("Error fetching product:", error);
                 setProduct(null);
             } else {
-                setProduct(data as Product);
-                if (data.imageUrls && data.imageUrls.length > 0) {
-                    setSelectedImage(data.imageUrls[0]);
+                setProduct(data as WithId<Product>);
+                if (data.image_urls && data.image_urls.length > 0) {
+                    setSelectedImage(data.image_urls[0]);
                 }
             }
             setIsLoading(false);
@@ -68,8 +68,8 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
         return <div className="text-center">Product not found.</div>
     }
 
-    const currentImage = selectedImage || (product.imageUrls && product.imageUrls.length > 0 ? product.imageUrls[0] : '/placeholder.svg');
-    const sortedPricingTiers = product.pricingTiers.sort((a, b) => a.minQuantity - b.minQuantity);
+    const currentImage = selectedImage || (product.image_urls && product.image_urls.length > 0 ? product.image_urls[0] : '/placeholder.svg');
+    const sortedPricingTiers = product.pricing_tiers.sort((a, b) => a.minQuantity - b.minQuantity);
     
     return (
       <div className="w-full max-w-7xl flex-1 px-4 sm:px-6 lg:px-8">
@@ -87,7 +87,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
             </div>
             <Carousel opts={{ align: "start", loop: false }} className="w-full">
                 <CarouselContent className="-ml-2">
-                    {product.imageUrls.map((url, index) => (
+                    {product.image_urls.map((url, index) => (
                          <CarouselItem key={index} className="basis-1/4 md:basis-1/5 pl-2">
                             <div 
                                 className={cn(
@@ -156,7 +156,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                     <AccordionTrigger className="font-bold text-base">Specifications</AccordionTrigger>
                     <AccordionContent>
                        <p>SKU: {(params.id as string).slice(0, 8).toUpperCase()}</p>
-                       <p>Available Stock: {product.availableStock} Units</p>
+                       <p>Available Stock: {product.available_stock} Units</p>
                     </AccordionContent>
                 </AccordionItem>
                 <AccordionItem value="item-2" className="border-b">

@@ -95,7 +95,7 @@ export default function BuyerOrdersPage() {
                             {orders && orders.map((order: WithId<Order>) => (
                                 <TableRow key={order.id}>
                                     <TableCell className="font-mono text-xs">{order.id.substring(0,8)}</TableCell>
-                                    <TableCell>{new Date(order.orderDate).toLocaleDateString()}</TableCell>
+                                    <TableCell>{new Date(order.order_date).toLocaleDateString()}</TableCell>
                                     <TableCell>
                                         <Badge
                                             variant={getStatusVariant(order.status)}
@@ -104,7 +104,7 @@ export default function BuyerOrdersPage() {
                                             {order.status}
                                         </Badge>
                                     </TableCell>
-                                    <TableCell>${order.totalAmount.toFixed(2)}</TableCell>
+                                    <TableCell>${Number(order.total_amount).toFixed(2)}</TableCell>
                                     <TableCell className="text-right">
                                         <Button asChild variant="outline" size="sm">
                                             <Link href={`/buyer/orders/${order.id}`}>View Order</Link>

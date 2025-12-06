@@ -106,7 +106,22 @@ export default function SupplierRegistrationPage() {
             const user = authData.user;
             const userId = user.id;
 
-            // 2. Upload files to Supabase Storage
+            // 2. Insert into users table FIRST
+            const { error: userInsertError } = await supabase.from('users').insert({
+                id: userId,
+                user_type: 'supplier',
+                email: data.email,
+            });
+
+            if (userInsertError) {
+              // Attempt to clean up the created auth user if profile insertion fails
+              await supabase.auth.signOut();
+              const { error: deleteError } = await supabase.auth.deleteUser(user.id);
+              console.error("Failed to delete orphaned auth user:", deleteError);
+              throw userInsertError;
+            }
+
+            // 3. Upload files to Supabase Storage
             const bizLicensePath = `${userId}/business_license_${data.businessLicense.name}`;
             const { error: licenseUploadError } = await supabase.storage.from('kyc-documents').upload(bizLicensePath, data.businessLicense);
             if (licenseUploadError) throw licenseUploadError;
@@ -122,7 +137,7 @@ export default function SupplierRegistrationPage() {
             if (bankProofUploadError) throw bankProofUploadError;
             const { data: { publicUrl: bankAccountProofUrl } } = supabase.storage.from('kyc-documents').getPublicUrl(bankProofPath);
 
-            // 3. AI Vetting
+            // 4. AI Vetting
             const businessLicenseDataUri = await fileToDataUri(data.businessLicense);
             const taxIdDocumentDataUri = await fileToDataUri(data.taxIdDocument);
             const vettingResult = await aiSupplierVetting({
@@ -131,12 +146,11 @@ export default function SupplierRegistrationPage() {
                 taxIdDocumentDataUri,
             });
 
-            // 4. Save supplier data to Supabase table
+            // 5. Save supplier data to Supabase table
             const accountStatus = vettingResult.isApproved ? 'active' : 'pending';
 
             const { error: dbError } = await supabase.from('suppliers').insert({
                 id: userId,
-                user_id: userId,
                 company_name: data.companyName,
                 business_email: data.email,
                 contact_number: data.phone,
@@ -149,12 +163,6 @@ export default function SupplierRegistrationPage() {
             });
 
             if (dbError) throw dbError;
-
-            await supabase.from('users').insert({
-                id: userId,
-                user_type: 'supplier',
-                email: data.email
-            });
 
             toast({
                 title: "Registration Submitted!",

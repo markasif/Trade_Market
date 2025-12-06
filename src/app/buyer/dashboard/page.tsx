@@ -31,7 +31,7 @@ export default function BuyerDashboardPage() {
         <div className="w-full max-w-4xl flex-1 px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col mb-8">
                 <h1 className="text-4xl font-black leading-tight tracking-tighter">Buyer Dashboard</h1>
-                <p className="text-muted-foreground text-lg mt-2">Welcome, Jane!</p>
+                <p className="text-muted-foreground text-lg mt-2">Welcome!</p>
             </div>
             <Card>
                 <CardHeader>

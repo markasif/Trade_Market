@@ -1,4 +1,5 @@
 
+
 export type WithId<T> = T & { id: string };
 
 export type PricingTier = {
@@ -9,21 +10,21 @@ export type PricingTier = {
 export type Product = {
     name: string;
     description: string;
-    categoryId: string;
-    imageUrls: string[];
-    pricingTiers: PricingTier[];
+    category_id: string;
+    image_urls: string[];
+    pricing_tiers: PricingTier[];
     moq: number;
-    availableStock: number;
-    supplierId: string;
+    available_stock: number;
+    supplier_id: string;
 }
 
 export type Order = {
-    buyerId: string;
-    orderDate: string; // Should be ISO string
-    totalAmount: number;
+    buyer_id: string;
+    order_date: string; // Should be ISO string
+    total_amount: number;
     status: 'awaiting-payment' | 'pending' | 'processing' | 'shipped' | 'delivered';
-    trackingNumber?: string;
-    paymentProofUrl?: string;
+    tracking_number?: string;
+    payment_proof_url?: string;
 }
 
 export type UserRole = 'admin' | 'supplier' | 'buyer' | null;

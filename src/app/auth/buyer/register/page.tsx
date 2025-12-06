@@ -85,6 +85,23 @@ export default function BuyerRegistrationPage() {
         const user = authData.user;
         const userId = user.id;
 
+        // 1. Insert into users table first
+        const { error: userInsertError } = await supabase.from('users').insert({
+            id: userId,
+            user_type: 'buyer',
+            email: data.email,
+        });
+
+        if (userInsertError) {
+          // Attempt to clean up the created auth user if profile insertion fails
+          // This is not transactional, but it's a good practice
+          await supabase.auth.signOut(); // Sign out the partially created user
+          const { error: deleteError } = await supabase.auth.deleteUser(user.id);
+          console.error("Failed to delete orphaned auth user:", deleteError);
+          throw userInsertError;
+        }
+
+
         const gstCertPath = `${userId}/gst_certificate_${data.gstCertificate.name}`;
         const { error: gstUploadError } = await supabase.storage.from('kyc-documents').upload(gstCertPath, data.gstCertificate);
         if (gstUploadError) throw gstUploadError;
@@ -95,33 +112,25 @@ export default function BuyerRegistrationPage() {
         if (bizRegUploadError) throw bizRegUploadError;
         const { data: { publicUrl: businessRegistrationUrl } } = supabase.storage.from('kyc-documents').getPublicUrl(bizRegPath);
         
+        // 2. Insert into buyers table
         const { error: dbError } = await supabase.from('buyers').insert({
             id: userId,
-            user_id: userId,
             business_name: data.businessName,
             phone: data.phone,
             shipping_address: data.shippingAddress,
             gst_number: data.gstNumber,
-            account_status: 'pending',
+            account_status: 'pending', // Or 'active' based on AI vetting result if implemented
             gst_certificate_url: gstCertificateUrl,
             business_registration_url: businessRegistrationUrl
         });
 
         if (dbError) throw dbError;
-
-        await supabase.from('users').insert({
-            id: userId,
-            user_type: 'buyer',
-            email: data.email,
-            first_name: '',
-            last_name: '',
-        });
         
         toast({
             title: "Registration Submitted",
             description: "Your account is under review. We'll notify you once it's approved.",
         });
-        router.push('/buyer-dashboard');
+        router.push('/buyer/dashboard');
 
       } catch(error: any) {
         toast({

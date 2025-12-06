@@ -6,14 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Bell, HelpCircle, Package, Receipt, ShoppingBag, LogOut } from "lucide-react";
 import { Logo3 } from "@/components/icons";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useSupabase } from "@/components/supabase-provider";
 import { useRouter } from "next/navigation";
 
-const userAvatar = PlaceHolderImages.find((img) => img.id === 'user-avatar-2');
-
 const navLinks = [
-    { href: "/buyer-dashboard", label: "Dashboard", icon: <Package className="h-5 w-5" /> },
+    { href: "/buyer/dashboard", label: "Dashboard", icon: <Package className="h-5 w-5" /> },
     { href: "/buyer/orders", label: "Orders", icon: <Receipt className="h-5 w-5" /> },
     { href: "/products", label: "Products", icon: <ShoppingBag className="h-5 w-5" /> },
 ];
@@ -38,12 +35,14 @@ function BuyerHeader() {
     }
 
     const user = session.user;
+    const avatarUrl = user?.user_metadata?.avatar_url;
+    const userEmail = user?.email || '';
 
     return (
         <header className="flex w-full items-center justify-center border-b bg-card">
             <div className="flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center gap-8 text-foreground">
-                    <Link href="/buyer-dashboard" className="flex items-center gap-4">
+                    <Link href="/buyer/dashboard" className="flex items-center gap-4">
                       <Logo3 className="h-6 w-6 text-primary" />
                       <h2 className="hidden sm:block text-lg font-bold tracking-tight">Marketplace</h2>
                     </Link>
@@ -66,8 +65,8 @@ function BuyerHeader() {
                         <span className="sr-only">Help</span>
                     </Button>
                     <Avatar className="h-10 w-10">
-                        {userAvatar && <AvatarImage src={user.user_metadata.avatar_url || userAvatar.imageUrl} alt="User avatar" />}
-                        <AvatarFallback>{user.email?.charAt(0).toUpperCase()}</AvatarFallback>
+                        {avatarUrl && <AvatarImage src={avatarUrl} alt="User avatar" />}
+                        <AvatarFallback>{userEmail.charAt(0).toUpperCase()}</AvatarFallback>
                     </Avatar>
                      <Button variant="ghost" size="icon" onClick={handleLogout}>
                         <LogOut className="h-5 w-5" />
