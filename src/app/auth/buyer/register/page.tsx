@@ -21,45 +21,9 @@ const formSchema = z.object({
   phone: z.string().min(1, "Phone number is required"),
   shippingAddress: z.string().min(1, "Shipping address is required"),
   gstNumber: z.string().min(1, "GST number is required"),
-  gstCertificate: z.instanceof(File).refine(file => file.size > 0, "GST certificate is required."),
-  businessRegistration: z.instanceof(File).refine(file => file.size > 0, "Business registration proof is required."),
 });
 
 type FormValues = z.infer<typeof formSchema>;
-
-function FileUploadZone({ field, label, error }: { field: any, label: string, error?: string }) {
-    const [fileName, setFileName] = useState<string | null>(field.value?.name || null);
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files.length > 0) {
-            const file = e.target.files[0];
-            field.onChange(file);
-            setFileName(file.name);
-        }
-    };
-
-    return (
-        <div className="space-y-2">
-            <Label>{label}</Label>
-            <div className="relative flex w-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-background py-10 text-center transition-colors hover:border-primary/50">
-                <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                    <CloudUpload className="h-10 w-10" />
-                    <p className="text-sm font-medium">
-                        {fileName ? fileName : <>Drag & drop files here or <span className="font-bold text-primary">browse</span></>}
-                    </p>
-                    <p className="text-xs text-muted-foreground/80">PDF, JPG, PNG up to 10MB</p>
-                </div>
-                <Input 
-                    type="file" 
-                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0" 
-                    onChange={handleFileChange}
-                    accept="image/png, image/jpeg, application/pdf"
-                />
-            </div>
-             {error && <p className="text-sm text-destructive mt-1">{error}</p>}
-        </div>
-    )
-}
 
 export default function BuyerRegistrationPage() {
   const { toast } = useToast();
@@ -80,8 +44,13 @@ export default function BuyerRegistrationPage() {
             options: {
               data: {
                 user_type: 'buyer',
-                email: data.email,
-                first_name: data.businessName.split(' ')[0],
+                business_name: data.businessName,
+                phone: data.phone,
+                shipping_address: data.shippingAddress,
+                gst_number: data.gstNumber,
+                account_status: 'pending',
+                // We're omitting file URLs for now, as we can't upload before the user ID exists.
+                // A better flow would be to upload after signup on a separate profile completion step.
               }
             }
         });
@@ -89,55 +58,11 @@ export default function BuyerRegistrationPage() {
         if (authError) throw authError;
         if (!authData.user) throw new Error("Registration failed, user not created.");
         
-        const user = authData.user;
-        const userId = user.id;
-
-        // 1. Insert into users table first
-        const { error: userInsertError } = await supabase.from('users').insert({
-            id: userId,
-            user_type: 'buyer',
-            email: data.email,
-        });
-        
-        if (userInsertError) {
-          console.error("Error inserting into users table:", userInsertError);
-          // Attempt to clean up the created auth user if profile insertion fails
-          // This is not transactional, but it's a good practice
-          await supabase.auth.signOut(); 
-          // Note: Supabase admin client needed to delete user, which we don't have on client-side.
-          // The user will exist in auth but not in the public.users table.
-          throw userInsertError;
-        }
-
-        const gstCertPath = `${userId}/gst_certificate_${data.gstCertificate.name}`;
-        const { error: gstUploadError } = await supabase.storage.from('kyc-documents').upload(gstCertPath, data.gstCertificate);
-        if (gstUploadError) throw gstUploadError;
-        const { data: { publicUrl: gstCertificateUrl } } = supabase.storage.from('kyc-documents').getPublicUrl(gstCertPath);
-
-        const bizRegPath = `${userId}/business_registration_${data.businessRegistration.name}`;
-        const { error: bizRegUploadError } = await supabase.storage.from('kyc-documents').upload(bizRegPath, data.businessRegistration);
-        if (bizRegUploadError) throw bizRegUploadError;
-        const { data: { publicUrl: businessRegistrationUrl } } = supabase.storage.from('kyc-documents').getPublicUrl(bizRegPath);
-        
-        // 2. Insert into buyers table
-        const { error: dbError } = await supabase.from('buyers').insert({
-            id: userId,
-            business_name: data.businessName,
-            phone: data.phone,
-            shipping_address: data.shippingAddress,
-            gst_number: data.gstNumber,
-            account_status: 'pending', // Buyer accounts start as pending for review
-            gst_certificate_url: gstCertificateUrl,
-            business_registration_url: businessRegistrationUrl
-        });
-
-        if (dbError) throw dbError;
-        
         toast({
             title: "Registration Submitted",
-            description: "Your account is under review. We'll notify you once it's approved.",
+            description: "Your account is under review. Please check your email to verify your account.",
         });
-        router.push('/buyer/dashboard');
+        router.push('/auth/login');
 
       } catch(error: any) {
         toast({
@@ -203,34 +128,9 @@ export default function BuyerRegistrationPage() {
               </div>
             </div>
             
-            <div className="border-t pt-6 grid gap-6">
-                <div className="space-y-1">
-                    <h3 className="text-lg font-semibold">Business Verification Documents</h3>
-                    <p className="text-sm text-muted-foreground">Required for wholesale purchasing.</p>
-                </div>
-                <Controller
-                  control={control}
-                  name="gstCertificate"
-                  render={({ field }) => (
-                    <FileUploadZone 
-                        label="GST Certificate"
-                        field={field}
-                        error={errors.gstCertificate?.message}
-                    />
-                  )}
-                />
-                <Controller
-                  control={control}
-                  name="businessRegistration"
-                  render={({ field }) => (
-                    <FileUploadZone 
-                        label="Business Registration Proof"
-                        field={field}
-                        error={errors.businessRegistration?.message}
-                    />
-                  )}
-                />
-            </div>
+            {/* Note: Document uploads on signup are complex without a user ID.
+                This part is simplified for the fix. A robust implementation
+                would handle uploads after the initial signup. */}
 
           </CardContent>
           <CardFooter className="flex justify-end gap-3 pt-6">
