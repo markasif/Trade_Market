@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/lib/supabase-client";
+import { useSupabase } from "@/components/supabase-provider";
 import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
@@ -27,6 +27,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 export default function BuyerRegistrationPage() {
   const { toast } = useToast();
+  const { supabase } = useSupabase();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -37,25 +38,39 @@ export default function BuyerRegistrationPage() {
 
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
       setIsSubmitting(true);
+      if (!supabase) {
+        toast({
+          variant: 'destructive',
+          title: 'Registration Failed',
+          description: 'Application is not ready. Please try again in a moment.',
+        });
+        setIsSubmitting(false);
+        return;
+      }
       try {
-        // Step 1: Create the user in Supabase Auth
+        // Step 1: Create the user in Supabase Auth, passing metadata
         const { data: authData, error: authError } = await supabase.auth.signUp({
             email: data.email,
             password: data.password,
+            options: {
+              data: {
+                user_type: 'buyer',
+                business_name: data.businessName,
+                gst_number: data.gstNumber,
+              }
+            }
         });
 
         if (authError) throw authError;
         if (!authData.user) throw new Error("Registration failed, user not created.");
         
-        // Step 2: Insert the profile into the public.buyers table
-        const { error: profileError } = await supabase.from('buyers').insert({
-          id: authData.user.id,
+        // Step 2: Update the newly created buyer's profile with the rest of the form data
+        const { error: profileError } = await supabase.from('buyers').update({
           business_name: data.businessName,
           phone: data.phone,
           shipping_address: data.shippingAddress,
           gst_number: data.gstNumber,
-          account_status: 'pending' // Default status
-        });
+        }).eq('id', authData.user.id);
 
         if (profileError) throw profileError;
 
@@ -63,6 +78,8 @@ export default function BuyerRegistrationPage() {
             title: "Registration Submitted!",
             description: "Please check your email to verify your account.",
         });
+        
+        // Navigate to login page on success
         router.push('/auth/login');
 
       } catch(error: any) {
